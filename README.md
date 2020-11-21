@@ -5,7 +5,8 @@
  
  [Atmel includes](https://github.com/DarkSector/AVR/tree/master/asm/include)
  
- [AVR Instruction Set](http://ww1.microchip.com/downloads/en/devicedoc/atmel-0856-avr-instruction-set-manual.pdf)
+ [AVR Instruction Set Atmel 2016](http://ww1.microchip.com/downloads/en/devicedoc/atmel-0856-avr-instruction-set-manual.pdf)
+ [AVR Instruction Set Microchip 2020](http://ww1.microchip.com/downloads/en/DeviceDoc/AVR-Instruction-Set-Manual-DS40002198A.pdf)
  
  [AVR Assembler Tutorials](http://www.avr-asm-tutorial.net/avr_en/beginner/index.html)
  
