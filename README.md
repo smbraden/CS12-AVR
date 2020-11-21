@@ -8,3 +8,5 @@
  [AVR Instruction Set](http://ww1.microchip.com/downloads/en/devicedoc/atmel-0856-avr-instruction-set-manual.pdf)
  
  [AVR Assembler Tutorials](http://www.avr-asm-tutorial.net/avr_en/beginner/index.html)
+ 
+ [Beginners Introduction to the Assembly Language of ATMEL-AVR-Microcontrollers](http://www.avr-asm-download.de/beginner_en.pdf)
