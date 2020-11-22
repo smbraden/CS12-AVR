@@ -10,23 +10,10 @@
 # only prefixed by an `at`.
 
 # Build Directories
-# [Dd]ebug/
-# ![Rr]ebug/(*.hex)
-# [Rr]elease/
-# ![Rr]elease/(*.hex)
-
-# Build Directories
-Debug/*.lss
-[Dd]ebug/*.map
-[Dd]ebug/*.obj
-[Dd]ebug/*.tmp
-# [Dd]ebug/*.hex
-
-[Rr]elease/*.lss
-[Rr]elease/*.map
-[Rr]elease/*.obj
-[Rr]elease/*.tmp
-# [Rr]elease/*.hex
+[Dd]ebug/
+![Dd]ebug/*.hex
+[Rr]elease/
+![Rr]elease/*.hex
 
 #Build Results
 *.o
