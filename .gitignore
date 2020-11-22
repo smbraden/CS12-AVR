@@ -16,7 +16,7 @@
 # ![Rr]elease/(*.hex)
 
 # Build Directories
-[Dd]ebug/*.lss
+Debug/*.lss
 [Dd]ebug/*.map
 [Dd]ebug/*.obj
 [Dd]ebug/*.tmp
