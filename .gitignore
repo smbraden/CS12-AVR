@@ -20,7 +20,7 @@
 *.d
 *.eep
 *.elf
-*.hex
+# *.hex
 *.map
 *.srec
 
