@@ -9,11 +9,24 @@
 # so most of the project and solution files are the same as VS files,
 # only prefixed by an `at`.
 
-#Build Directories
-[Dd]ebug/
-!Debug/*.hex
-[Rr]elease/
-!Release/*.hex
+# Build Directories
+# [Dd]ebug/
+# ![Rr]ebug/(*.hex)
+# [Rr]elease/
+# ![Rr]elease/(*.hex)
+
+# Build Directories
+[Dd]ebug/*.lss
+[Dd]ebug/*.map
+[Dd]ebug/*.obj
+[Dd]ebug/*.tmp
+# [Dd]ebug/*.hex
+
+[Rr]elease/*.lss
+[Rr]elease/*.map
+[Rr]elease/*.obj
+[Rr]elease/*.tmp
+# [Rr]elease/*.hex
 
 #Build Results
 *.o
