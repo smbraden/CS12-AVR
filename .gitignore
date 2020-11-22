@@ -11,16 +11,16 @@
 
 # Build Directories
 [Dd]ebug/
-![Dd]ebug/(*.hex)
+#![Dd]ebug/(*.hex)
 [Rr]elease/
-![Rr]elease/(*.hex)
+#![Rr]elease/(*.hex)
 
 #Build Results
 *.o
 *.d
 *.eep
 *.elf
-# *.hex
+#*.hex
 *.map
 *.srec
 
