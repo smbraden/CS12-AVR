@@ -11,9 +11,10 @@
 
 # Build Directories
 [Dd]ebug/
-#![Dd]ebug/(*.hex)
+![Dd]ebug/*.hex
 [Rr]elease/
-#![Rr]elease/(*.hex)
+![Rr]elease/*.hex
+
 
 #Build Results
 *.o
@@ -26,3 +27,9 @@
 
 #User Specific Files
 *.atsuo
+
+
+
+
+#![Dd]ebug/(*.hex)
+#![Rr]elease/(*.hex)
