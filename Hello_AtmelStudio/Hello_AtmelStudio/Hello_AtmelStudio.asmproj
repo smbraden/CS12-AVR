@@ -78,6 +78,7 @@
         <avrasm.assembler.general.IncludeFile>m328def.inc</avrasm.assembler.general.IncludeFile>
       </AvrAssembler>
     </ToolchainSettings>
+    <OutputType>Executable</OutputType>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="main.asm">
