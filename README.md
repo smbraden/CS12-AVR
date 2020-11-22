@@ -13,3 +13,7 @@
  [Beginners Introduction to the Assembly Language of ATMEL-AVR-Microcontrollers](http://www.avr-asm-download.de/beginner_en.pdf)
  
  [ATmega48A/PA/88A/PA/168A/PA/328/P Data Sheet](http://ww1.microchip.com/downloads/en/DeviceDoc/ATmega48A-PA-88A-PA-168A-PA-328-P-DS-DS40002061B.pdf)
+ 
+ [AVR Simulator](http://atmel-studio-doc.s3-website-us-east-1.amazonaws.com/webhelp/GUID-54E8AE06-C4C4-430C-B316-1C19714D122B-en-US-1/GUID-C73F1111-250E-4106-B5E5-85A512B75E8B.html)
+ 
+ [Atmel Studio](https://ww1.microchip.com/downloads/en/DeviceDoc/Getting-Started-with-Atmel-Studio7.pdf)
