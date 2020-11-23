@@ -17,3 +17,14 @@
  [AVR Simulator](http://atmel-studio-doc.s3-website-us-east-1.amazonaws.com/webhelp/GUID-54E8AE06-C4C4-430C-B316-1C19714D122B-en-US-1/GUID-C73F1111-250E-4106-B5E5-85A512B75E8B.html)
  
  [Atmel Studio](https://ww1.microchip.com/downloads/en/DeviceDoc/Getting-Started-with-Atmel-Studio7.pdf)
+
+ ## Flashing
+
+As of writing, programmers supported by Atmel Studio IDE include
+* STK500
+* J-Link (over IP)
+
+The hex file can also be flashed to the MCU using another avrdude-supported ISP programmer.The command for flashing Hello_AtmelStudio is the following:
+
+ `<avrdude -p m328 -c usbasp -e -U flash:w:Hello_AtmelStudio.hex>`
+ 
