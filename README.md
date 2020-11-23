@@ -18,13 +18,17 @@
  
  [Atmel Studio](https://ww1.microchip.com/downloads/en/DeviceDoc/Getting-Started-with-Atmel-Studio7.pdf)
 
+![ATmega 168/328 Pin Mapping](Atmega168PinMap.png)
+
  ## Flashing
 
 As of writing, programmers supported by Atmel Studio IDE include
 * STK500
 * J-Link (over IP)
 
-The hex file can also be flashed to the MCU using another avrdude-supported ISP programmer. The command for flashing Hello_AtmelStudio using a USBasp programmer is the following:
+The hex file can also be flashed to the MCU using another avrdude-supported ISP programmer. [AVRDUDE](https://www.nongnu.org/avrdude/) is a utility to download/upload/manipulate the ROM and EEPROM contents of AVR microcontrollers using the in-system programming technique (ISP). 
+
+The command for flashing Hello_AtmelStudio using a USBasp programmer is the following:
 
  `avrdude -p m328 -c usbasp -e -U flash:w:Hello_AtmelStudio.hex`
  

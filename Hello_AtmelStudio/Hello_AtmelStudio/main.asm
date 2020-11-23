@@ -10,13 +10,23 @@
 //-------------------------------------------------------------------------------------*/
 
 .NOLIST						; Don't list the following in the list file
-.INCLUDE	"m328def.inc"	; "M328DEF.INC"
+.INCLUDE	"m328def.inc"	; 
 .LIST						; Switch list on again
 
 .EQU		F_CPU = 1000000 ; 1MHz Internal RC clock
 .DEVICE		ATMEGA328		; The target device type (actually using ATmega328A)
-.ORG		0x00			; next instruction written to address 0x0000
 
+/************ SRAM defines */
+
+.DSEG
+.ORG SRAM_START
+; Format: Label: .BYTE N ; reserve N Bytes from Label:
+
+/************ Reset Vector */
+
+.CSEG						; lets the assembler switch output to the code section
+.ORG		0x0000			; next instruction written to address 0x0000
+							; first instruction of an executable always located at address 0x0000
 /******** Initialize Stack */
 
 ldi R16, HIGH(RAMEND)		; LDI = "Load Immediate Into"
@@ -32,29 +42,30 @@ out DDRB, r16				; write the value in r16 (0xFF) to Data Direction Register B
 
 MAIN:						; main event loop
     
-	sbi		PORTB, 5		; switch off the LED
-	rcall	Delay			; wait for half a second
-	cbi		PORTB, 5		; switch it on
-	rcall	Delay			; wait for half a secon
-	
+	sbi		PORTB, 5		; "Set Bit In" pin high
+	rcall	Delay			
+	cbi		PORTB, 5		; "Clear Bit In" pin low
+	rcall	Delay			
+		
 rjmp MAIN
 	
 Delay :
 	
-	ldi r16, 31
+	ldi r16, 5
 	
 	Outer_Loop:				; outer loop label
 							; R26 - R31 are 16-bit
+							; R27:R26 = X, R29:R28 = Y, R31:R30 = Z
 		ldi r26, 0          ; clr r26; clear register 26
 		ldi r27, 0          ; clr r27; clear register 27
 							
 		Inner_Loop:         ; the loop label
-			adiw r26, 1		; “add immediate to word”: r26:r27 incremented
+			adiw r26, 1		; “Add Immediate to Word” R27:R26 incremented
 		brne Inner_Loop
 		
 		dec r16				; decrement r16
 
-	brne Outer_Loop			; load r16 with 8
+	brne Outer_Loop			; " Branch if Not Equal"
 
 ret							; return from subroutine
 
