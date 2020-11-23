@@ -24,7 +24,7 @@ As of writing, programmers supported by Atmel Studio IDE include
 * STK500
 * J-Link (over IP)
 
-The hex file can also be flashed to the MCU using another avrdude-supported ISP programmer.The command for flashing Hello_AtmelStudio is the following:
+The hex file can also be flashed to the MCU using another avrdude-supported ISP programmer. The command for flashing Hello_AtmelStudio using a USBasp programmer is the following:
 
  `<avrdude -p m328 -c usbasp -e -U flash:w:Hello_AtmelStudio.hex>`
  
