@@ -62,8 +62,8 @@ Reset:
 	ldi r16, (1 << INT0)				
 	out EIMSK, r16						;  external pin interrupt is enabled
 
-	ldi r16, (1 << INTF0)
-	out EIFR, r16						; when a logical change on the INT0 pin triggers inter request, INTF0 is set 
+	; ldi r16, (1 << INTF0)
+	; out EIFR, r16						; when a logical change on the INT0 pin triggers inter request, INTF0 is set 
 
 	SEI									; Set Global Interrupt Enable Bit
 
@@ -89,10 +89,11 @@ EXT_INT0:
 	push r17							
 	in r17, SREG						; save flags
 
+	; [10ms debouncing delay here...]
 
 	in r19, PORTB
-	ldi r18, (1 << PB5)
-	eor r19, r18						; toggle pin PB5
+	ldi r18, (1 << PB5)					; PB5-toggling bit mask
+	eor r19, r18						
 	out PORTB, r19
 
 	out SREG, r17						; restore flags
@@ -174,5 +175,9 @@ ret							; return from subroutine
 	ret		: 1 : Return from Subroutine — Returns from the subroutine.
 
 	rjmp	: 1 : Relative Jump — Relative jump to an address.
+
+	sts		: 2 : Stores one byte from a Register to the data space.  For parts with SRAM, 
+					the data space consists of the Register File, I/O memory, 
+					and internal SRAM (and external SRAM if applicable).
 
 */
