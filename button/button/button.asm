@@ -1,12 +1,12 @@
 /*-------------------------------------------------------------------------------------//
-    Project:			Hello_AtmelStudio
-	Filename:           main.asm
+    Project:			button
+	Filename:           button.asm
     Author:				Sonja Braden
     Reference:			
     Date:               11/21/2020
 	Device:				ATmega328A
 	Device details:		1MHz clock, 8-bit MCU
-    Description:		Toggle an I/O pin on port B of an ATmega328
+    Description:		Toggle an I/O pin on port B when a button is pressed
 //-------------------------------------------------------------------------------------*/
 
 .NOLIST								; Don't list the following in the list file
@@ -27,54 +27,97 @@
 .CSEG								; lets the assembler switch output to the code section
 .ORG		0x0000					; next instruction written to address 0x0000
 									; first instruction of an executable always located at address 0x0000
-	rjmp MAIN						; the reset vector
-;	rjmp IntServRout1				; the interrupt service routine for the first interrupt
-;	rjmp IntServRout2				; the interrupt service routine for the second interrupt
+	jmp Reset						; the reset vector
+	jmp EXT_INT0					; IRQ0 Handler
+	;jmp EXT_INT1					; IRQ1 Handler
+
+
+
+
+/******************** Reset vector */
+
+Reset:								
+    
+	/**************** Initialize Stack */
+
+	ldi r16, HIGH(RAMEND)				; LDI = "Load Immediate Into"
+	out SPH, r16						; SPH = "Stack Pointer High"
+	ldi r16, LOW(RAMEND)		
+	out SPL, r16						; SPL = "Stack Pointer Low"
+
+	/********************** GPIO Inits */
+
+	ser r16								; "SEt all bits in Register"
+	out DDRB, r16						; Data Direction Register B set to output
+					
+ 	clr r16								; Sets PORTD as input
+	out DDRD, r16
+
+	/***************** Interrupt Inits */
+	
+	ldi r16, (1 << ISC00)				
+	sts EICRA, r16						; trigger Inter for any logical change on INT0
+	
+	ldi r16, (1 << INT0)				
+	out EIMSK, r16						;  external pin interrupt is enabled
+
+	ldi r16, (1 << INTF0)
+	out EIFR, r16						; when a logical change on the INT0 pin triggers inter request, INTF0 is set 
+
+	SEI									; Set Global Interrupt Enable Bit
+
+	/************** Begin Program Loop */
+
+	ProgramLoop:
+
+	rjmp ProgramLoop
+
+
+
+
+
+
+
 
 /****** Interrupt service routines */
-/*
-IntServRout1:
+
+EXT_INT0:
+
+	push r19							; save register on stack
+	push r18
+	push r17							
+	in r17, SREG						; save flags
+
+
+	in r19, PORTB
+	ldi r18, (1 << PB5)
+	eor r19, r18						; toggle pin PB5
+	out PORTB, r19
+
+	out SREG, r17						; restore flags
+	pop r17
+	pop r18
+	pop r19
 
 RETI								; end of service routine 1
 
-IntServRout2:
+
+/*
+
+EXT_INT1:
+
+PUSH r15							; save register on stack
+IN r15,SREG							; save flags
+
+;[... more instructions...] 
+
+OUT SREG,r15						; restore flags
+POP r15
+RETI								; end of service routine 1
 
 RETI								; end of service routine 2
 
 */
-/************** Begin Program Main */
-
-MAIN:								
-    
-/**************** Initialize Stack */
-
-ldi R16, HIGH(RAMEND)				; LDI = "Load Immediate Into"
-out SPH, R16						; SPH = "Stack Pointer High"
-ldi R16, LOW(RAMEND)		
-out SPL, R16						; SPL = "Stack Pointer Low"
-
-/***************** Initializations */
-
-ldi r16, 0xFF						; load register 16 with 0xFF (all bits 1)
-out DDRB, r16						; write the value in r16 (0xFF) to Data Direction Register B
-
-SEI									; Set Interrupt Enable Bit
-
-/**************** Begin blink loop */
-
-ProgramLoop:
-
-	sbi		PORTB, PB5				; "Set Bit In" pin high
-	rcall	Delay			
-	cbi		PORTB, PB5				; "Clear Bit In" pin low
-	rcall	Delay			
-
-rjmp ProgramLoop
-	
-
-
-
-
 
 /********************* Subroutines */
 

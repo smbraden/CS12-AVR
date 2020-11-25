@@ -1,13 +1,13 @@
 ;
 ; ********************************************
-; * [AVR Assembler test] *
+; * [Add Project title here] *
 ; * [Add more info on software version here] *
 ; * (C)20xx by [Add Copyright Info here] *
 ; ********************************************
 ;
 ; Included header file for target AVR type
 .NOLIST
-.INCLUDE "m328def.inc" ; ATmega328/A header
+.INCLUDE "tn13def.inc" ; Header for ATTINY13
 .LIST
 ;
 ; ============================================
