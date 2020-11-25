@@ -49,9 +49,10 @@ Reset:
 
 	ser r16								; "SEt all bits in Register"
 	out DDRB, r16						; Data Direction Register B set to output
-					
- 	clr r16								; Sets PORTD as input
-	out DDRD, r16
+	clr r16								
+	
+	out PORTB, r16
+	out DDRD, r16						; Sets PORTD as input
 
 	/***************** Interrupt Inits */
 	
