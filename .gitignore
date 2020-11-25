@@ -10,10 +10,10 @@
 # only prefixed by an `at`.
 
 # Build Directories
-[Dd]ebug/
-![Dd]ebug/*.hex
-[Rr]elease/
-![Rr]elease/*.hex
+Debug/
+!Debug/*.hex
+Release/
+!Release/*.hex
 
 
 #Build Results
@@ -27,9 +27,3 @@
 
 #User Specific Files
 *.atsuo
-
-
-
-
-#![Dd]ebug/(*.hex)
-#![Rr]elease/(*.hex)
