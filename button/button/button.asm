@@ -84,13 +84,19 @@ Reset:
 
 EXT_INT0:
 
-	push r19							; save register on stack
+	push r20							; save register on stack
+	push r19							
 	push r18
 	push r17							
 	in r17, SREG						; save flags
 
-	; [10ms debouncing delay here...]
-
+	; [~10ms debouncing delay...]
+	ldi r20, 5
+	debounceLoop:
+		dec r20
+		cpi r20, 1
+		brge debounceLoop
+		
 	in r19, PORTB
 	ldi r18, (1 << PB5)					; PB5-toggling bit mask
 	eor r19, r18						
@@ -100,6 +106,7 @@ EXT_INT0:
 	pop r17
 	pop r18
 	pop r19
+	pop r20
 
 RETI								; end of service routine 1
 
