@@ -9,11 +9,17 @@
 # so most of the project and solution files are the same as VS files,
 # only prefixed by an `at`.
 
-# Build Directories
-Debug/
-!Debug/*.hex
-Release/
-!Release/*.hex
+Build Directories
+/**/Debug/*.lss
+/**/Debug/*.map
+/**/Debug/*.obj
+/**/Debug/*.tmp
+
+/**/Release/*.lss
+/**/Release/*.map
+/**/Release/*.obj
+/**/Release/*.tmp
+
 
 
 #Build Results
@@ -27,3 +33,12 @@ Release/
 
 #User Specific Files
 *.atsuo
+
+
+
+# Build Directories
+# /**/Debug/
+# !/**/Debug/*.hex
+
+# /**/Release/
+# !/**/Release/*.hex
