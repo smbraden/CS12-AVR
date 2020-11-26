@@ -41,7 +41,19 @@ out SPL, r16				; SPL = "Stack Pointer Low"
 ldi r16, 0xFF				; load register 16 with 0xFF (all bits 1)
 out DDRB, r16				; write the value in r16 (0xFF) to Data Direction Register B
 
-;/********* Function Defs */
+;/******** Main Event Loop */
+
+MAIN:
+	
+	sbi		PORTB, PB5		; "Set Bit In" pin high
+	rcall	Delay			
+	cbi		PORTB, PB5		; "Clear Bit In" pin low
+	rcall	Delay			
+		
+rjmp MAIN
+	
+
+;/************* Subroutines*/
 
 Delay :
 	
@@ -62,17 +74,4 @@ Delay :
 	brne Outer_Loop			; " Branch if Not Equal"
 
 ret							; return from subroutine
-
-;/******** Main Event Loop */
-
-MAIN:
-	
-	sbi		PORTB, PB5		; "Set Bit In" pin high
-	rcall	Delay			
-	cbi		PORTB, PB5		; "Clear Bit In" pin low
-	rcall	Delay			
-		
-rjmp MAIN
-	
-
 
