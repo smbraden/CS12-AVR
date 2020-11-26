@@ -1,8 +1,8 @@
 ;/*-------------------------------------------------------------------------------------//
-;   Filename:			main.asm
+;   Filename:			main.S
 ;   Author:				Sonja Braden
 ;   Reference:			
-;   Resources:			http://avra.sourceforge.net/README.html
+;   Resources:			https://github.com/Ro5bert/avra/blob/master/USAGE.md
 ;						https://github.com/Ro5bert/avra
 ;	Date:               11/21/2020
 ;	Device:				ATmega328A
@@ -11,11 +11,10 @@
 ;   Description:		Toggle an I/O pin on port B of an ATmega328
 ;//-------------------------------------------------------------------------------------*/
 
-;.nolist							; Don't list the following in the list file
+.nolist							; Don't list the following in the list file
 .include	"m328def.inc"
-;.list							; Switch list on again
+.list							; Switch list on again
 
-.device		ATmega328
 .equ		F_CPU = 1000000 	; 1MHz Internal RC clock
 
 ;/************ SRAM defines */
@@ -41,9 +40,21 @@ out SPL, r16				; SPL = "Stack Pointer Low"
 ldi r16, 0xFF				; load register 16 with 0xFF (all bits 1)
 out DDRB, r16				; write the value in r16 (0xFF) to Data Direction Register B
 
-;/********* Function Defs */
+;/******** Main Event Loop */
 
-Delay :
+MAIN:
+	
+	sbi		PORTB, PB5		; "Set Bit In" pin high
+	rcall	Delay			
+	cbi		PORTB, PB5		; "Clear Bit In" pin low
+	rcall	Delay			
+		
+rjmp MAIN
+
+
+;/************ Subrotines */
+
+Delay:
 	
 	ldi r16, 5
 	
@@ -62,17 +73,5 @@ Delay :
 	brne Outer_Loop			; " Branch if Not Equal"
 
 ret							; return from subroutine
-
-;/******** Main Event Loop */
-
-MAIN:
-	
-	sbi		PORTB, PB5		; "Set Bit In" pin high
-	rcall	Delay			
-	cbi		PORTB, PB5		; "Clear Bit In" pin low
-	rcall	Delay			
-		
-rjmp MAIN
-	
 
 
