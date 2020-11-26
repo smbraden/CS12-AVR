@@ -47,12 +47,20 @@ Reset:
 
 	/********************** GPIO Inits */
 
-	ser r16								; "SEt all bits in Register"
-	out DDRB, r16						; Data Direction Register B set to output
-	clr r16								
+	ldi r16, (1 << PB5)					; bit mask PB5
+	in r15, DDRB						; snapshot of register
+	or r15, r16							; bit mask PB5 & former register state
+	out DDRB, r15						; PB5 set to output
 	
-	out PORTB, r16
-	out DDRD, r16						; Sets PORTD as input
+	ldi r16, (1 << PD2)					; bit mask PD2
+	in r15, DDRD						; snapshot of register
+	or r15, r16							; bit mask PD2 & former register state
+	out DDRD, r15						; PD2 set to input
+
+	in r15, PORTB						; snapshot of register
+	or r15, r16							; bit mask PD2 & former register state
+	out PORTB, r15						; PD2 pull-up resistors set
+	
 
 	/***************** Interrupt Inits */
 	
@@ -61,9 +69,6 @@ Reset:
 	
 	ldi r16, (1 << INT0)				
 	out EIMSK, r16						;  external pin interrupt is enabled
-
-	; ldi r16, (1 << INTF0)
-	; out EIFR, r16						; when a logical change on the INT0 pin triggers inter request, INTF0 is set 
 
 	SEI									; Set Global Interrupt Enable Bit
 
@@ -83,21 +88,19 @@ Reset:
 /****** Interrupt service routines */
 
 EXT_INT0:
-
-	push r20							; save register on stack
-	push r19							
+								
+	push r19							; save register on stack
 	push r18
 	push r17							
 	in r17, SREG						; save flags
 
-	; [~10ms debouncing delay...]
-	ldi r20, 5
+	ldi r19, 5							; ~10ms debouncing delay (5 ticks)
 	debounceLoop:
-		dec r20
-		cpi r20, 1
+		dec r19
+		cpi r19, 1
 		brge debounceLoop
-		
-	in r19, PORTB
+	
+	in r19, PORTB						; snapshot of the current PORTB i/o state	
 	ldi r18, (1 << PB5)					; PB5-toggling bit mask
 	eor r19, r18						
 	out PORTB, r19
@@ -106,8 +109,7 @@ EXT_INT0:
 	pop r17
 	pop r18
 	pop r19
-	pop r20
-
+	
 RETI								; end of service routine 1
 
 
