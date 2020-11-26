@@ -15,7 +15,6 @@
 .LIST								; Switch list on again
 
 .EQU		F_CPU = 1000000			; 1MHz Internal RC clock
-.DEVICE		ATmega328				; The target device type (actually using ATmega328A)
 
 ;/******************** SRAM defines */
 
