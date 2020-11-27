@@ -29,101 +29,125 @@
 .ORG		0x0000					; next instruction written to address 0x0000
 									; first instruction of an executable always located at address 0x0000
 	jmp Reset						; the reset vector
-	jmp ADC_INT						; ADC Conversion Complete Handler
+;	jmp ADC_INT						; ADC Conversion Complete Handler
 	
 
 /******************** Reset vector */
 
 Reset:								
     
-	/**************** Initialize Stack */
+	call initStack
 
-	ldi r16, HIGH(RAMEND)				; LDI = "Load Immediate Into"
-	out SPH, r16						; SPH = "Stack Pointer High"
-	ldi r16, LOW(RAMEND)		
-	out SPL, r16						; SPL = "Stack Pointer Low"
+	call initGPIO
+	
+	call initADC0
+	
+	/************** Begin Program Loop */
 
-	/********************** GPIO Inits */
+	ProgramLoop:
+		
+		ldi r16, 0
+		call readADC
+		lds r16, ADCH
+		call LightDisplay
 
+	jmp ProgramLoop
+
+
+
+
+/********************* Subroutines */
+
+
+
+/********************** GPIO Inits */
+initGPIO:
 	ser r16								; set all bits in register
 	out DDRB, r16						; entire PORTB set to output
 	
 	cbi DDRC, PC0						; PC0 set to input
 	sbi PORTC, PC0						; activaate pull-up resistors
-		
-	/***************** Interrupt Inits */
-	ldi r16, (1 << ADIE)
-	sts ADCSRA, r16						; Activate ADC Conversion Complete Interrupt
-	
-	SEI									; SREG = SREG | (1 << I)
+ret
 
-	/**********************% ADC Inits */
+
+
+
+
+/**************** Initialize Stack */
+
+initStack:
+	ldi r16, HIGH(RAMEND)				; LDI = "Load Immediate Into"
+	out SPH, r16						; SPH = "Stack Pointer High"
+	ldi r16, LOW(RAMEND)		
+	out SPL, r16						; SPL = "Stack Pointer Low"
+ret
+
+
+
+
+/********************** ADC Inits */
+
+initADC0:
+	ldi r16, (1 << REFS0)			; set REFS0 bit without disturbing other bits
+	lds r15, ADMUX
+	or r15, r16
+	ldi r16, (1 << REFS1)			; clear REFS1 bit without disturbing other bits
+	com r16
+	and r15, r16
+
+	sts ADMUX, r15					; voltage ref set to AVCC w/ external cap at AREF pin
 	
-	; Set voltage reference to AVCC with external capacitor at AREF pin
-	ldi r16, (1 << REFS0)
-	sts ADMUX, r16
-	;cbi ADMUX, REFS1
-	
+	ldi r16, (1 << ADPS1)
+	lds r15, ADCSRA
+	or r15, r16
+	sts ADCSRA, r15					; ADCSRA |= (1 << ADPS1) ADC prescalar division factor set to 4
+
 	ldi r16, (1 << ADEN)
 	sts ADCSRA, r16					; Set ADC enable bit
-	
-	/************** Begin Program Loop */
-
-	ProgramLoop:
-
-	rjmp ProgramLoop
+ret
 
 
-/****** Interrupt service routines */
+/******************* Start an ADC conversion */
 
-ADC_INT:
-	
-	; Prologue
-	PUSH r17							; save register on stack
+; Pre:		The channel to be read is in r16 (a 3-bit value, 0-8)
+; Post:		The conversion awaits in ADCH and ACDL
+readADC:
+
 	PUSH r18
-	PUSH r26
-	PUSH r27
-	IN r17,SREG							; save flags
+	PUSH r17
 
-	in r27, ADCH
-	in r26, ADCL
-	
-	; 2^10		= 1024
-	; 1024/128	= 8
-	; 2^7		= 128
-	
-	clr r18								; iterator
-	shiftLoop:
-		lsr r27							; shift r27:r26 left by 7
-		inc r18
-		cpi r18, 7
-		brlt shiftLoop
-/*
-	clr r18
-	out PORTB, r18								
-	lightLoop:
-		sbi PORTB, r26					; operand 2 of sbi must be constant
-		cpi r26, 0
-		brge lightLoop
-	
-	*/
 
-	mov r16, r26
-	call LightDisplay
-	
+	lds r17, ADMUX
+	or r17, r16
+	sts ADMUX, r17
 
-	; Epilogue
-	OUT SREG,r17						; restore flags
-	POP r27
-	POP r26
+
+	ldi r17, (1 << ADSC)				
+	lds r18, ADCSRA
+	or r17, r18
+	sts ADCSRA, r17						; ADCSRA |= (1 << ADSC);
+
+	lds r17, ADCSRA
+	cbr r17, ADSC						; sample of ADSC bit cleared from ADCSRA
+
+	loopUntilClear:
+		lds r18, ADCSRA
+		cp r18, r17
+			breq exit
+		jmp loopUntilClear
+
+	exit:
+
 	POP r18
 	POP r17
 
-RETI								; end of service routine
+ret
 
-/********************* Subroutines */
 
-; Pre:		The parameter is in r16
+
+/******************** Dispaly Reading */
+
+; Pre:		The 3-bit value is in r16
 LightDisplay :
 
 	cpi r16, 1
@@ -183,6 +207,69 @@ LightDisplay :
 
 	next8:
 ret
+
+
+
+
+
+
+/****** Interrupt service routines */
+/*
+ADC_INT:
+	
+	; Prologue
+	PUSH r17							; save register on stack
+	PUSH r18
+	PUSH r26
+	PUSH r27
+	IN r17,SREG							; save flags
+
+	lds r27, ADCH
+	lds r26, ADCL
+	
+	; 2^10		= 1024
+	; 1024/128	= 8
+	; 2^7		= 128
+	
+	clr r18								; iterator
+	shiftLoop:
+		lsr r27							; shift r27:r26 left by 7
+		inc r18
+		cpi r18, 7
+		brlt shiftLoop
+
+	clr r18
+	out PORTB, r18								
+	lightLoop:
+		sbi PORTB, r26					; operand 2 of sbi must be constant
+		cpi r26, 0
+		brge lightLoop
+	
+	mov r16, r26
+	call LightDisplay
+	
+
+	; Epilogue
+	OUT SREG,r17						; restore flags
+	POP r27
+	POP r26
+	POP r18
+	POP r17
+
+RETI								; end of service routine
+
+/***************** Interrupt Inits /
+
+initInterrupts:
+
+	ldi r16, (1 << ADIE)
+	sts ADCSRA, r16						; Activate ADC Conversion Complete Interrupt
+	
+	SEI									; SREG = SREG | (1 << I)
+
+ret
+
+*/
 
 
 
