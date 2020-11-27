@@ -36,13 +36,13 @@
 
 Reset:								
     
-	call initStack
+	rcall initStack
 
-	call initGPIO
+	rcall initGPIO
 		
-	call initADC0
+	rcall initADC0
 	
-	call testGPIO
+	rcall testGPIO
 
 	/************** Begin Program Loop */
 
@@ -51,7 +51,7 @@ Reset:
 		ldi r16, 0
 		call readADC
 		lds r16, ADCH
-		call LightDisplay
+		rcall LightDisplay
 
 	jmp ProgramLoop
 
@@ -112,7 +112,7 @@ ret
 
 /********************************* GPIO Test */
 
-Delay :
+DelayL :
 	
 	ldi r16, 5
 	
@@ -135,36 +135,58 @@ ret							; return from subroutine
 
 
 
-testGPIO :
+DelayF :
+	
+							; R26 - R31 are 16-bit
+							; R27:R26 = X, R29:R28 = Y, R31:R30 = Z
+		ldi r26, 0          ; clr r26; clear register 26
+		ldi r27, 0          ; clr r27; clear register 27
+							
+		Counter_Loop:         ; the loop label
+			adiw r26, 1		; “Add Immediate to Word” R27:R26 incremented
+		brne Counter_Loop
+		
+ret							; return from subroutine
 
+
+
+
+
+
+testGPIO :
+	
+	PUSH r18
 	PUSH r17
 	PUSH r16
 	
-	ldi r16, 2
-
+	; Flash PortB a few times
+	ldi r16, 3
 	BlinkLoop:
 		ser r17
 		out PORTB, r17
-		call Delay
+		call DelayL
 		clr r17
 		out PORTB, r17
-		call Delay
+		call DelayL
 
 		dec r16
 		cpi r16, 0
 	brge BlinkLoop
 	
+	; Traverse the port a few times
 	ldi r16, 1
 	ldi r17, 0
 	BlinkTraverseLoop:
 		out PORTB, r16
 		rol r16
+		call DelayF
 		inc r17
 		cpi r17, 32
 	brlt BlinkTraverseLoop	
 		
 	POP r16
 	POP r17
+	POP r18
 
 ret
 
@@ -196,7 +218,7 @@ readADC:
 		lds r18, ADCSRA
 		cp r18, r17
 			breq exit
-		jmp loopUntilClear
+		rjmp loopUntilClear
 
 	exit:
 
@@ -219,28 +241,28 @@ LightDisplay :
 
 	cpi r16, 1
 	brge pin1
-	jmp next1
+	rjmp next1
 	pin1:
 		sbi PORTB, 0
 	
 	next1:
 	cpi r16, 2
 	brge pin2
-	jmp next2
+	rjmp next2
 	pin2:
 		sbi PORTB, 1
 
 	next2:
 	cpi r16, 3
 	brge pin3
-	jmp next3
+	rjmp next3
 	pin3:
 		sbi PORTB, 2
 
 	next3:
 	cpi r16, 4
 	brge pin4
-	jmp next4
+	rjmp next4
 	pin4:
 		sbi PORTB, 3
 
@@ -254,7 +276,7 @@ LightDisplay :
 	next5:
 	cpi r16, 6
 	brge pin6
-	jmp next6
+	rjmp next6
 	pin6:
 		sbi PORTB, 5
 
@@ -268,7 +290,7 @@ LightDisplay :
 	next7:
 	cpi r16, 8
 	brge pin8
-	jmp next8
+	rjmp next8
 	pin8:
 		sbi PORTB, 7
 
