@@ -51,7 +51,15 @@ Reset:
 		ldi r16, 0
 		call readADC
 		lds r16, ADCH
-		rcall LightDisplay
+		
+		clr r18
+		shiftLoop:
+			lsr r16							; equivalent to left shifting r27:r26 by 7
+			inc r18
+			cpi r18, 5
+		brlt shiftLoop
+
+		rcall LightDisplay					; r16 now holds the 3-bit reading
 
 	jmp ProgramLoop
 
@@ -142,7 +150,7 @@ DelayF :
 		ldi r26, 0          ; clr r26; clear register 26
 		ldi r27, 0          ; clr r27; clear register 27
 							
-		Counter_Loop:         ; the loop label
+		Counter_Loop:       
 			adiw r26, 1		; “Add Immediate to Word” R27:R26 incremented
 		brne Counter_Loop
 		
@@ -155,7 +163,6 @@ ret							; return from subroutine
 
 testGPIO :
 	
-	PUSH r18
 	PUSH r17
 	PUSH r16
 	
@@ -174,7 +181,7 @@ testGPIO :
 	brge BlinkLoop
 	
 	; Traverse the port a few times
-	ldi r16, 1
+	ldi r16, (1 << 0)
 	ldi r17, 0
 	BlinkTraverseLoop:
 		out PORTB, r16
@@ -186,8 +193,7 @@ testGPIO :
 		
 	POP r16
 	POP r17
-	POP r18
-
+	
 ret
 
 
