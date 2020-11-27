@@ -58,6 +58,16 @@ Reset:
 
 /********************* Subroutines */
 
+/**************** Initialize Stack */
+
+initStack:
+	ldi r16, HIGH(RAMEND)				; LDI = "Load Immediate Into"
+	out SPH, r16						; SPH = "Stack Pointer High"
+	ldi r16, LOW(RAMEND)		
+	out SPL, r16						; SPL = "Stack Pointer Low"
+ret
+
+
 
 
 /********************** GPIO Inits */
@@ -67,19 +77,6 @@ initGPIO:
 	
 	cbi DDRC, PC0						; PC0 set to input
 	sbi PORTC, PC0						; activaate pull-up resistors
-ret
-
-
-
-
-
-/**************** Initialize Stack */
-
-initStack:
-	ldi r16, HIGH(RAMEND)				; LDI = "Load Immediate Into"
-	out SPH, r16						; SPH = "Stack Pointer High"
-	ldi r16, LOW(RAMEND)		
-	out SPL, r16						; SPL = "Stack Pointer Low"
 ret
 
 
@@ -150,6 +147,11 @@ ret
 ; Pre:		The 3-bit value is in r16
 LightDisplay :
 
+	PUSH r15
+
+	clr r15
+	out PORTB, r15
+
 	cpi r16, 1
 	brge pin1
 	jmp next1
@@ -206,6 +208,9 @@ LightDisplay :
 		sbi PORTB, 7
 
 	next8:
+
+	POP r15
+
 ret
 
 
