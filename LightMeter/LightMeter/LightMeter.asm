@@ -91,9 +91,13 @@ initADC0:
 	ldi r16, (1 << REFS1)			; clear REFS1 bit without disturbing other bits
 	com r16
 	and r15, r16
-
-	sts ADMUX, r15					; voltage ref set to AVCC w/ external cap at AREF pin
+	sts ADMUX, r15					; Voltage Ref set to AVCC w/ external cap at AREF pin
 	
+	ldi r16, (1 << ADLAR)			
+	lds r15, ADMUX
+	or r15, r16
+	sts ADMUX, r15					; left-adjusted conversion in the ADCH:ADCL
+
 	ldi r16, (1 << ADPS1)
 	lds r15, ADCSRA
 	or r15, r16
@@ -101,6 +105,65 @@ initADC0:
 
 	ldi r16, (1 << ADEN)
 	sts ADCSRA, r16					; Set ADC enable bit
+ret
+
+
+/********************************* GPIO Test */
+
+Delay :
+	
+	ldi r16, 5
+	
+	Outer_Loop:				; outer loop label
+							; R26 - R31 are 16-bit
+							; R27:R26 = X, R29:R28 = Y, R31:R30 = Z
+		ldi r26, 0          ; clr r26; clear register 26
+		ldi r27, 0          ; clr r27; clear register 27
+							
+		Inner_Loop:         ; the loop label
+			adiw r26, 1		; “Add Immediate to Word” R27:R26 incremented
+		brne Inner_Loop
+		
+		dec r16				; decrement r16
+
+	brne Outer_Loop			; " Branch if Not Equal"
+
+ret							; return from subroutine
+
+
+
+
+testGPIO :
+
+	PUSH r17
+	PUSH r16
+	
+	ldi r16, 2
+
+	BlinkLoop:
+		ser r17
+		out PORTB, r17
+		call Delay
+		clr r17
+		out PORTB, r17
+		call Delay
+
+		dec r16
+		cpi r16, 0
+	brge BlinkLoop
+	
+	ldi r16, 1
+	ldi r17, 0
+	BlinkTraverseLoop:
+		out PORTB, r16
+		rol r16
+		inc r17
+		cpi r17, 32
+	brlt BlinkTraverseLoop	
+		
+	POP r16
+	POP r17
+
 ret
 
 
