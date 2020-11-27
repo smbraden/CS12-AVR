@@ -39,9 +39,11 @@ Reset:
 	call initStack
 
 	call initGPIO
-	
+		
 	call initADC0
 	
+	call testGPIO
+
 	/************** Begin Program Loop */
 
 	ProgramLoop:
