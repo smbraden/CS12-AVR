@@ -95,11 +95,17 @@ ret
 /********************** GPIO Inits */
 
 initGPIO:
+
+	push r16
+
 	ser r16								; set all bits in register
 	out DDRB, r16						; entire PORTB set to output
 	
 	cbi DDRC, PC0						; PC0 set to input
 	sbi PORTC, PC0						; activaate pull-up resistors
+
+	pop r16
+
 ret
 
 
@@ -108,6 +114,10 @@ ret
 /********************** ADC Inits */
 
 initADC0:
+
+	push r15
+	push r16
+
 	ldi r16, (1 << REFS0)			; set REFS0 bit without disturbing other bits
 	lds r15, ADMUX
 	or r15, r16
@@ -128,6 +138,10 @@ initADC0:
 
 	ldi r16, (1 << ADEN)
 	sts ADCSRA, r16					; Set ADC enable bit
+
+	pop r16
+	pop r15
+
 ret
 
 
@@ -150,7 +164,7 @@ testGPIO :
 		rcall DelayL
 
 		inc r16
-		cpi r16, 4
+		cpi r16, 0x4
 		brlt BlinkLoop
 	
 	RepeatShifts:
@@ -192,6 +206,10 @@ ret
 
 DelayL :
 	
+	push r16
+	push r26
+	push r27
+
 	ldi r16, 5
 	
 	Outer_Loop:				
@@ -207,6 +225,10 @@ DelayL :
 
 	brne Outer_Loop			; " Branch if Not Equal"
 
+	pop r27
+	pop r26
+	pop r16
+
 ret							; return from subroutine
 
 
@@ -214,14 +236,19 @@ ret							; return from subroutine
 
 DelayF :
 	
-							; R27:R26 = X, R29:R28 = Y, R31:R30 = Z
-		ldi r26, 0          ; clr r26; clear register 26
-		ldi r27, 0          ; clr r27; clear register 27
+	push r26
+	push r27
+						; R27:R26 = X, R29:R28 = Y, R31:R30 = Z
+	ldi r26, 0          ; clr r26; clear register 26
+	ldi r27, 0          ; clr r27; clear register 27
 							
-		Counter_Loop:       
-			adiw r26, 1		; “Add Immediate to Word” R27:R26 incremented
-		brne Counter_Loop
-		
+	Counter_Loop:       
+		adiw r26, 1		; “Add Immediate to Word” R27:R26 incremented
+	brne Counter_Loop
+
+	pop r27
+	pop r26
+			
 ret							; return from subroutine
 
 
