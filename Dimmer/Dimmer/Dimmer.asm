@@ -150,6 +150,7 @@ ret
 
 testGPIO :
 	
+	PUSH r18
 	PUSH r17
 	PUSH r16
 	
@@ -172,6 +173,7 @@ testGPIO :
 	; Traverse the port a few times
 	ldi r16, (1 << 0)
 	ldi r17, 0
+	ldi r18, 0
 
 	LeftShiftLoop:
 		out PORTB, r16
@@ -189,7 +191,8 @@ testGPIO :
 		cpi r17, 14
 	brlt RightShiftLoop	
 
-	cpi r17, 28
+	inc r18
+	cpi r18, 2
 	brlt RepeatShifts	
 
 	clr r17
@@ -197,7 +200,8 @@ testGPIO :
 
 	POP r16
 	POP r17
-	
+	POP r18
+
 ret
 
 
