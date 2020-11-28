@@ -168,11 +168,9 @@ testGPIO :
 		cpi r16, 0x3
 		brlt BlinkLoop
 	
-	RepeatShifts:
-
 	ldi r18, 0
+	RepeatShifts:						; Traverse the port a few times
 
-	; Traverse the port a few times
 	ldi r16, (1 << 0)
 	ldi r17, 0
 	
