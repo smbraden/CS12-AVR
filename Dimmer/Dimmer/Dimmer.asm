@@ -29,8 +29,8 @@
 .ORG		0x0000					; next instruction written to address 0x0000
 									; first instruction of an executable always located at address 0x0000
 	rjmp Reset						; the reset vector
-	rjmp TIM0_int					; TIMER0_COMPA interrupt
-
+	rjmp TIMER0_COMPA				; TIMER0_COMPA interrupt
+;	rjmp TIMER0_OVF
 /******************** Reset vector */
 
 Reset:								
@@ -50,6 +50,8 @@ Reset:
 	
 	rcall testGPIO
 
+	rcall initTimer
+
 	/************** Begin Program Loop */
 
 	ProgramLoop:
@@ -57,8 +59,8 @@ Reset:
 		ldi r16, 0						; read channel 0
 		call readADC
 		lds r16, ADCH
-		com r16
-		out OCR0A, r16					; set the timer to the 1's complement of the 8-bit ADC reading
+		; com r16						; set the timer to the 1's complement of the 8-bit ADC reading
+		out OCR0A, r16
 /*		
 		ser r16
 		clr r15
@@ -74,7 +76,7 @@ Reset:
 
 /********************* Subroutines */
 
-/************* Init Timer/Counter0 */
+/********************** Init Timer */
 
 initTimer :
 
@@ -148,30 +150,44 @@ testGPIO :
 	PUSH r16
 	
 	; Flash PortB a few times
-	ldi r16, 3
+	clr r16
 	BlinkLoop:
 		ser r17
 		out PORTB, r17
-		call DelayL
+		rcall DelayL
 		clr r17
 		out PORTB, r17
-		call DelayL
+		rcall DelayL
 
 		dec r16
-		cpi r16, 0
+		cpi r16, 3
 	brge BlinkLoop
 	
 	; Traverse the port a few times
 	ldi r16, (1 << 0)
 	ldi r17, 0
-	BlinkTraverseLoop:
+	
+	RepeatShifts:
+
+	LeftShiftLoop:
 		out PORTB, r16
-		ror r16
-		call DelayF
+		lsl r16
+		rcall DelayF
 		inc r17
-		cpi r17, 32
-	brlt BlinkTraverseLoop	
-		
+		cpi r17, 8
+	brlt LeftShiftLoop	
+	
+	RightShiftLoop:
+		out PORTB, r16
+		lsr r16
+		rcall DelayF
+		inc r17
+		cpi r17, 16
+	brlt RightShiftLoop	
+
+	cpi r17, 32
+	brlt RepeatShifts	
+
 	POP r16
 	POP r17
 	
@@ -258,7 +274,7 @@ ret
 
 /****** Interrupt service routines */
 
-TIM0_int: 
+TIMER0_COMPA: 
 
 	; Prologue
 	PUSH r17							; save register on stack
