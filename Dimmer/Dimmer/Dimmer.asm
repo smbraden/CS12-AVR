@@ -30,7 +30,7 @@
 									; first instruction of an executable always located at address 0x0000
 	rjmp Reset						; the reset vector
 	rjmp TIMER0_COMPA				; TIMER0_COMPA interrupt
-;	rjmp TIMER0_OVF					; timer overflow inerrupt
+	rjmp TIMER0_OVF					; timer overflow inerrupt
 /******************** Reset vector */
 
 Reset:								
@@ -58,10 +58,7 @@ Reset:
 		
 		ldi r16, 0						; read channel 0
 		rcall readADC
-		lds r16, ADCH
-		com r16							; set the timer to the 1's complement of the 8-bit ADC reading
-		out OCR0A, r16
-
+		
 	rjmp ProgramLoop
 
 
@@ -153,14 +150,14 @@ testGPIO :
 		rcall DelayL
 
 		inc r16
-		cpi r16, 3
-	brge BlinkLoop
+		cpi r16, 4
+		brlt BlinkLoop
 	
+	RepeatShifts:
+
 	; Traverse the port a few times
 	ldi r16, (1 << 0)
 	ldi r17, 0
-	
-	RepeatShifts:
 
 	LeftShiftLoop:
 		out PORTB, r16
@@ -180,6 +177,9 @@ testGPIO :
 
 	cpi r17, 28
 	brlt RepeatShifts	
+
+	clr r17
+	out PORTB, r17
 
 	POP r16
 	POP r17
@@ -283,6 +283,25 @@ TIMER0_COMPA:
 	; Epilogue
 	out SREG,r17						; restore flags
 	pop r19
+	pop r18
+	pop r17
+
+reti
+
+
+TIMER0_OVF :
+
+	; Prologue
+	push r17							; save register on stack
+	push r18
+	in r17,SREG	
+
+	lds r18, ADCH
+	com r18							; set the timer to the 1's complement of the 8-bit ADC reading
+	out OCR0A, r18
+
+	; Epilogue
+	out SREG,r17						; restore flags
 	pop r18
 	pop r17
 
