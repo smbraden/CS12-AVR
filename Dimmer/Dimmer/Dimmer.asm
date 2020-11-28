@@ -30,7 +30,7 @@
 									; first instruction of an executable always located at address 0x0000
 	rjmp Reset						; the reset vector
 	rjmp TIMER0_COMPA				; TIMER0_COMPA interrupt
-;	rjmp TIMER0_OVF
+;	rjmp TIMER0_OVF					; timer overflow inerrupt
 /******************** Reset vector */
 
 Reset:								
@@ -57,19 +57,12 @@ Reset:
 	ProgramLoop:
 		
 		ldi r16, 0						; read channel 0
-		call readADC
+		rcall readADC
 		lds r16, ADCH
-		; com r16						; set the timer to the 1's complement of the 8-bit ADC reading
+		com r16							; set the timer to the 1's complement of the 8-bit ADC reading
 		out OCR0A, r16
-/*		
-		ser r16
-		clr r15
-		out PORTB, r16
-		rcall startTimer
-		out PORTB, r15
-		rcall startTimer	*/
 
-	jmp ProgramLoop
+	rjmp ProgramLoop
 
 
 
@@ -159,7 +152,7 @@ testGPIO :
 		out PORTB, r17
 		rcall DelayL
 
-		dec r16
+		inc r16
 		cpi r16, 3
 	brge BlinkLoop
 	
@@ -174,7 +167,7 @@ testGPIO :
 		lsl r16
 		rcall DelayF
 		inc r17
-		cpi r17, 8
+		cpi r17, 7
 	brlt LeftShiftLoop	
 	
 	RightShiftLoop:
@@ -182,10 +175,10 @@ testGPIO :
 		lsr r16
 		rcall DelayF
 		inc r17
-		cpi r17, 16
+		cpi r17, 14
 	brlt RightShiftLoop	
 
-	cpi r17, 32
+	cpi r17, 28
 	brlt RepeatShifts	
 
 	POP r16
@@ -277,10 +270,10 @@ ret
 TIMER0_COMPA: 
 
 	; Prologue
-	PUSH r17							; save register on stack
-	PUSH r18
-	PUSH r19
-	IN r17,SREG	
+	push r17							; save register on stack
+	push r18
+	push r19
+	in r17,SREG	
 
 	in r18, PORTB
 	ser r19
@@ -288,9 +281,9 @@ TIMER0_COMPA:
 	out PORTB, r18						; toogle all output on PORTB
 
 	; Epilogue
-	OUT SREG,r17						; restore flags
+	out SREG,r17						; restore flags
 	pop r19
 	pop r18
-	POP r17
+	pop r17
 
 reti
