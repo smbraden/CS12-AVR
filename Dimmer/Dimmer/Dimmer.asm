@@ -165,16 +165,17 @@ testGPIO :
 		rcall DelayL
 
 		inc r16
-		cpi r16, 0x4
+		cpi r16, 0x3
 		brlt BlinkLoop
 	
 	RepeatShifts:
 
+	ldi r18, 0
+
 	; Traverse the port a few times
 	ldi r16, (1 << 0)
 	ldi r17, 0
-	ldi r18, 0
-
+	
 	LeftShiftLoop:
 		out PORTB, r16
 		lsl r16
