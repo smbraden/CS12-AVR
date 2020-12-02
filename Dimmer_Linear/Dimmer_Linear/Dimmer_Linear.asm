@@ -304,7 +304,7 @@ Delay_ms:
 		subi r17, 1
 		brne microLoop2
 		
-		sbiw r26, 1		; “Add Immediate to Word” R27:R26 incremented
+		sbiw r26, 1
 		brne milliLoop
 	
 	pop r27
@@ -327,7 +327,7 @@ Delay_us_word:
 
 	microLoop:
 	
-		sbiw r26, 1		; “Add Immediate to Word” R27:R26 incremented
+		sbiw r26, 1
 		brne microLoop
 	
 	pop r27
@@ -412,9 +412,9 @@ Square_byte :
 ret
 
 
-/******************** Square Nibble */
+/******************** Square a Nibble */
 
-; Pre:			hgiher nibble of r16 holds the value to be squared
+; Pre:			higher nibble (bits 7:4) of r16 contains the value to be squared
 ; Post:			r16 holds the square of the nibble (a byte)
 
 Square_nibble:
