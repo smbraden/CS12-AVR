@@ -2,29 +2,36 @@
     Project:			Dimmer_Linear
 	Filename:           Dimmer_Linear.asm
     Author:				Sonja Braden
-    Reference:			https://github.com/hexagon5un/AVR-Programming
-    Date:               11/27/2020
+    Date:               12/02/2020
 	Device:				ATmega328A
-	Device details:		1MHz clock, 8-bit MCU
-    Description:		Continuously measures light intensity, and uses PWM to dim/brighten
-						an LED display in response to less/more light intensity on a sensor.
+	Device details:		1MHz internal clock, 8-bit CPU, Vcc = 5 volts
+    
+	Description:		Continuously measures light intensity, and uses PWM to dim/brighten
+						an LED display in response to adjusting a potentiometer knob.
+						A button is used to turn off/on the lights completely by 
+						putting the CPU to sleep or waking it up
+						This is a brute force approach, to contrast the program, Dimmer
 
-						This is brute force version on the project, Dimmer
-
-	Circuit:			PORTB pins (PB0 - PB7) are wired to LEDS in order 0 - 7
+	Circuit:			PORTB pins (PB0 - PB7) are wired to LEDS in order 0 - 7.
 						PC0 (ADC0) is wired to the node of a voltage divider, which 
-						consists of a ~35 kOhm photoresistor tied from ground to the 
-						divider node, and a ~500-1000 Ohm resistor tied from Vcc to 
-						the divider node
+						consists of ~1 kOhm potenitometer tied from  Vcc to divider,
+						and a constant resistance of ~220Ohm from ground to divider.
+						PD3 is wired to button that brings the PD3 pin high when pushed.
 //-------------------------------------------------------------------------------------*/
 
 .NOLIST								; Don't list the following in the list file
 .INCLUDE	"m328def.inc"			; 
 .LIST								; Switch list on again
 
-.EQU		F_CPU = 1000000			; 1MHz Internal RC clock
-.EQU		ON_TICKS = 4			; Play with this value 1-40 is a good range
 .DEVICE		ATmega328				; The target device type (actually using ATmega328A)
+
+.EQU		F_CPU = 1000000			; 1MHz Internal RC clock
+.EQU		LOWER_BOUND = 5			;
+.EQU		DEFAULT_DELAY = 400		; (*) 100 - 400 good range
+.EQU		ON = 0x01
+.EQU		OFF = 0x00
+
+.DEF		SLEEP_IDLE = r20		; don't use r20 anywhere else
 
 /******************** SRAM defines */
 
@@ -37,53 +44,84 @@
 .CSEG								; lets the assembler switch output to the code section
 .ORG		0x0000					; next instruction written to address 0x0000
 									; first instruction of an executable always located at address 0x0000
-	rjmp Reset						; the reset vector
+	jmp Reset				; RESET
+	jmp EXT_INT0			; INT0
+	reti					; INT1
+	reti					; PCINT0
+	reti					; PCINT1
+	reti					; PCINT2
+	reti					; WDT
+	reti					; TIMER2_COMPA
+	reti					; TIMER2_COMPB
+	reti					; TIMER2_OVF
+	reti					; TIMER1_CAPT
+	reti					; TIMER1_COMPA
+	reti					; TIMER1_COMPB
+	reti					; TIMER1_OVF
+	reti					; TIMER0_COMPA
+	reti					; TIMER0_COMPB
+	reti					; TIMER0_OVF
+	reti					; SPI_STC
+	reti					; USART_RX
+	reti					; USART_UDRE
+	reti					; USART_TX
+	reti					; ADC
+	reti					; EE_READY
+	reti					; ANALOG_COMP
+	reti					; TWI
+	reti					; SPM_Ready
 
-/******************** Reset vector */
+
+/******************** Reset Routine */
 
 Reset:								
     
 	/**************** Initialize Stack */
 
-	ldi r16, HIGH(RAMEND)				; LDI = "Load Immediate Into"
-	out SPH, r16						; SPH = "Stack Pointer High"
+	ldi r16, HIGH(RAMEND)				
+	out SPH, r16						; SPH = Stack Pointer High
 	ldi r16, LOW(RAMEND)		
-	out SPL, r16						; SPL = "Stack Pointer Low"
+	out SPL, r16						; SPL = Stack Pointer Low
 
 	/**************** Initialize other */
 
-	rcall initGPIO
-		
-	rcall initADC0
-	
-	rcall testGPIO
+	call initGPIO
+	call initADC0
+	call testGPIO
+	call initSleepMode
+	call InitInterrupts
 
 	/************** Begin Program Loop */
 
+	ldi XL, low(DEFAULT_DELAY)
+	ldi XH, high(DEFAULT_DELAY)
+
 	ProgramLoop:
 		
-		; ser r16						; all on PORTB
-		clr r16							; all off on PORTB
-		out PORTB, r16					; toogle all output on PORTB
+		cpi SLEEP_IDLE, ON
+		brne SkipSleep
+		sleep
+
+		SkipSleep:
 
 		ldi r16, 0						; read channel 0
 		rcall readADC
-		
+
 		lds r16, ADCH
-		com r16							; 1's complement
-		rcall DelayTicks
 
-		; clr r16						; all off on PORTB
-		ser r16							; all on PORTB
-		out PORTB, r16					
+		rcall Square_nibble				; squaring the most significant nibble
+										; creates more light contrast
+		ser r17							; (*) all on PORTB
+		out PORTB, r17					; toogle all output on PORTB
+		
+		rcall Delay_us_byte
+		
+		clr r17			
+		out PORTB, r17					
 
-		ldi r16, ON_TICKS 
-		rcall DelayTicks
+		rcall Delay_us_word				; delay for DEFAULT_DELAY 
 		
 	rjmp ProgramLoop
-
-
-
 
 /********************* Subroutines */
 
@@ -92,15 +130,29 @@ Reset:
 
 initGPIO:
 
+	push r17
 	push r16
 
+										; Output 
 	ser r16								; set all bits in register
 	out DDRB, r16						; entire PORTB set to output
 	
+										; Voltage sensor
 	cbi DDRC, PC0						; PC0 set to input
 	sbi PORTC, PC0						; activaate pull-up resistors
 
+										; Button
+	ldi r16, (1 << PD2)					; bit mask PD2
+	in r17, DDRD						; snapshot of register
+	or r17, r16							; bit mask PD2 & former register state
+	out DDRD, r17						; PD2 set to input
+
+	in r17, PORTB						; snapshot of register
+	or r17, r16							; bit mask PD2 & former register state
+	out PORTB, r17						; PD2 pull-up resistors set
+
 	pop r16
+	pop r17
 
 ret
 
@@ -143,6 +195,21 @@ initADC0:
 ret
 
 
+
+/******************* Prep for Idle Sleep mode */
+
+initSleepMode:
+	push r16
+
+	ldi r16, 0x0E | (1 << SE)			; idle sleep mode, and sleep enable bit
+	out SMCR, r16
+	
+	ldi SLEEP_IDLE, OFF
+
+	pop r16
+
+ret
+
 /********************************* GPIO Test */
 
 
@@ -153,6 +220,7 @@ testGPIO :
 	PUSH r16
 	
 	; Flash PortB a few times
+	/*
 	clr r16
 	BlinkLoop:
 		
@@ -167,9 +235,10 @@ testGPIO :
 		rcall Delay_ms
 
 		inc r16
-		cpi r16, 0x3
+		cpi r16, 0x2
 		brlt BlinkLoop
-	
+	*/
+
 	ldi r18, 0
 	RepeatShifts:						; Traverse the port a few times
 
@@ -178,7 +247,8 @@ testGPIO :
 	
 	ldi XL, low(100)
 	ldi XH, high(100)
-
+	
+		
 	LeftShiftLoop:
 		out PORTB, r16
 		lsl r16
@@ -198,9 +268,9 @@ testGPIO :
 	inc r18
 	cpi r18, 2
 	brlt RepeatShifts	
-
+	
 	clr r17
-	out PORTB, r17
+	out PORTB, r17					 ; turn it off
 
 	POP r16
 	POP r17
@@ -211,7 +281,7 @@ ret
 
 
 
-/************* Parameterized Delay */
+/************* Parameterized Delays */
 
 
 ; Pre:		r27:r26 contains the number of milliseconds
@@ -242,6 +312,43 @@ Delay_ms:
 	pop r17
 	pop r16
 
+ret
+
+
+
+
+; Pre:		r27:r26 contains the number of microseconds
+Delay_us_word:
+
+
+	push r26
+	push r27
+	
+
+	microLoop:
+	
+		sbiw r26, 1		; “Add Immediate to Word” R27:R26 incremented
+		brne microLoop
+	
+	pop r27
+	pop r26
+
+ret
+
+
+
+; Pre:		r16 has the number of ticks to count
+
+Delay_us_byte:
+
+	push r16
+
+	delayLoop:
+		
+		subi r16, 1
+		brne delayLoop
+	
+	pop r16
 ret
 
 
@@ -283,22 +390,92 @@ readADC:
 
 ret
 
+/********************** Square Byte */
+
+; Pre:			r26 holds the byte value to be squared
+; Post:			R27:R26 holds the word result
+Square_byte :
+
+	push r17
+	push r0
+	push r1
+
+	mov r17, r26
+	mul r26, r17
+	mov r27, r1
+	mov r26, r0
+
+	pop r1
+	pop r0
+	pop r17
+
+ret
 
 
-; Pre:		r16 has the number of ticks to count
-; Post:		N/A
-/******************* Delay for X ticks  */
+/******************** Square Nibble */
 
-DelayTicks:
+; Pre:			hgiher nibble of r16 holds the value to be squared
+; Post:			r16 holds the square of the nibble (a byte)
 
-	push r16
+Square_nibble:
 
-	delayLoop:
-		
-		subi r16, 1
-		brne delayLoop
+	push r17
+	push r0
+	push r1
 	
+	lsr r16					
+	lsr r16
+	lsr r16
+	lsr r16
+
+	mov r17, r16
+	mul r16, r17
+	mov r16, r0				; r1:r0 holds the result of multiplications
+
+	pop r1
+	pop r0
+	pop r17
+
+ret
+
+
+
+
+
+
+/***************** Interrupt Inits */
+InitInterrupts:
+	
+	push r16
+	
+	ldi r16, (1 << ISC00)| (1 << ISC01)			
+	sts EICRA, r16						;  rising edge of INT0 generates an interrupt request
+	
+	ldi r16, (1 << INT0)				
+	out EIMSK, r16						;  external pin interrupt is enabled
+
+	SEI									; Set Global Interrupt Enable Bit
 	pop r16
 ret
 
 
+
+/****** Interrupt service routines */
+
+EXT_INT0:
+								
+	push r19							; save register on stack
+	in r17, SREG						; save flags
+
+	ldi r19, 10							; ~10ms debouncing delay
+	debounceLoop:
+		subi r19, 1
+		brne debounceLoop
+	
+	ldi r19, ON
+	eor SLEEP_IDLE, r19
+
+	out SREG, r17						; restore flags
+	pop r19
+	
+RETI								; end of service routine 1

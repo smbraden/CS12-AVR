@@ -6,8 +6,8 @@
     Date:               11/27/2020
 	Device:				ATmega328A
 	Device details:		1MHz clock, 8-bit MCU
-    Description:		Continuously measures light intensity, and uses PWM to dim/brighten
-						an LED display in response to less/more light intensity on a sensor.
+    Description:		Uses PWM to dim/brighten an LED display depending on the 
+						ACD voltage reading
 //-------------------------------------------------------------------------------------*/
 
 .NOLIST								; Don't list the following in the list file
@@ -28,10 +28,35 @@
 .CSEG								; lets the assembler switch output to the code section
 .ORG		0x0000					; next instruction written to address 0x0000
 									; first instruction of an executable always located at address 0x0000
-	rjmp Reset						; the reset vector
-	rjmp TIMER0_COMPA				; TIMER0_COMPA interrupt
-	rjmp TIMER0_OVF					; timer overflow inerrupt
-/******************** Reset vector */
+	
+	rjmp Reset				; RESET
+	reti					; INT0
+	reti					; INT1
+	reti					; PCINT0
+	reti					; PCINT1
+	reti					; PCINT2
+	reti					; WDT
+	reti					; TIMER2_COMPA
+	reti					; TIMER2_COMPB
+	reti					; TIMER2_OVF
+	reti					; TIMER1_CAPT
+	reti					; TIMER1_COMPA
+	reti					; TIMER1_COMPB
+	reti					; TIMER1_OVF
+	rjmp TIMER0_COMPA		; TIMER0_COMPA
+	reti					; TIMER0_COMPB
+	rjmp TIMER0_OVF			; TIMER0_OVF
+	reti					; SPI_STC
+	reti					; USART_RX
+	reti					; USART_UDRE
+	reti					; USART_TX
+	reti					; ADC
+	reti					; EE_READY
+	reti					; ANALOG_COMP
+	reti					; TWI
+	reti					; SPM_Ready
+
+/******************** Reset Routine */
 
 Reset:								
     
@@ -155,7 +180,7 @@ testGPIO :
 	PUSH r16
 	
 	; Flash PortB a few times
-	
+	/*
 	ldi XH, high(500)
 	ldi XL, low(500)				; could also just clr this reg
 
@@ -171,7 +196,8 @@ testGPIO :
 		inc r16
 		cpi r16, 0x3
 		brlt BlinkLoop
-	
+	*/
+
 	ldi r18, 0
 	RepeatShifts:						; Traverse the port a few times
 

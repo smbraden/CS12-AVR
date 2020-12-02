@@ -34,7 +34,7 @@
 
 
 
-/******************** Reset vector */
+/******************** Reset Routine */
 
 Reset:								
     
