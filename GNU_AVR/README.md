@@ -3,10 +3,14 @@ This Directory provides a script for generating a basic avr assembly project in 
 
 # To create a project
 `cd ~/CS12-AVR/GNU_AVR/template`
+
 `./createProject fooBar`
+
 `cd ~/CS12-AVR/GNU_AVR/fooBar`
 
 # To assemble and flash the executable
 `cd ~/CS12-AVR/GNU_AVR/fooBar`
+
 `make`
+
 `make flash`
