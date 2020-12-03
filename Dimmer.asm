@@ -6,8 +6,8 @@
     Date:               11/27/2020
 	Device:				ATmega328A
 	Device details:		1MHz clock, 8-bit MCU
-    Description:		Uses PWM to dim/brighten an LED display depending on the 
-						ACD voltage reading
+    Description:		Continuously measures light intensity, and uses PWM to dim/brighten
+						an LED display in response to less/more light intensity on a sensor.
 //-------------------------------------------------------------------------------------*/
 
 .NOLIST								; Don't list the following in the list file
@@ -28,35 +28,10 @@
 .CSEG								; lets the assembler switch output to the code section
 .ORG		0x0000					; next instruction written to address 0x0000
 									; first instruction of an executable always located at address 0x0000
-	
-	rjmp Reset				; RESET
-	reti					; INT0
-	reti					; INT1
-	reti					; PCINT0
-	reti					; PCINT1
-	reti					; PCINT2
-	reti					; WDT
-	reti					; TIMER2_COMPA
-	reti					; TIMER2_COMPB
-	reti					; TIMER2_OVF
-	reti					; TIMER1_CAPT
-	reti					; TIMER1_COMPA
-	reti					; TIMER1_COMPB
-	reti					; TIMER1_OVF
-	rjmp TIMER0_COMPA		; TIMER0_COMPA
-	reti					; TIMER0_COMPB
-	rjmp TIMER0_OVF			; TIMER0_OVF
-	reti					; SPI_STC
-	reti					; USART_RX
-	reti					; USART_UDRE
-	reti					; USART_TX
-	reti					; ADC
-	reti					; EE_READY
-	reti					; ANALOG_COMP
-	reti					; TWI
-	reti					; SPM_Ready
-
-/******************** Reset Routine */
+	rjmp Reset						; the reset vector
+	rjmp TIMER0_COMPA				; TIMER0_COMPA interrupt
+	rjmp TIMER0_OVF					; timer overflow inerrupt
+/******************** Reset vector */
 
 Reset:								
     
@@ -83,7 +58,7 @@ Reset:
 		
 		ldi r16, 0						; read channel 0
 		rcall readADC
-
+		
 	rjmp ProgramLoop
 
 
@@ -180,37 +155,29 @@ testGPIO :
 	PUSH r16
 	
 	; Flash PortB a few times
-	/*
-	ldi XH, high(500)
-	ldi XL, low(500)				; could also just clr this reg
-
 	clr r16
 	BlinkLoop:
 		ser r17
 		out PORTB, r17
-		rcall Delay_ms
+		rcall DelayL
 		clr r17
 		out PORTB, r17
-		rcall Delay_ms
+		rcall DelayL
 
 		inc r16
 		cpi r16, 0x3
 		brlt BlinkLoop
-	*/
-
+	
 	ldi r18, 0
 	RepeatShifts:						; Traverse the port a few times
 
 	ldi r16, (1 << 0)
 	ldi r17, 0
 	
-	ldi XH, high(100)
-	ldi XL, low(100)				; could also just clr this reg
-
 	LeftShiftLoop:
 		out PORTB, r16
 		lsl r16
-		rcall Delay_ms
+		rcall DelayF
 		inc r17
 		cpi r17, 7
 	brlt LeftShiftLoop	
@@ -218,7 +185,7 @@ testGPIO :
 	RightShiftLoop:
 		out PORTB, r16
 		lsr r16
-		rcall Delay_ms
+		rcall DelayF
 		inc r17
 		cpi r17, 14
 	brlt RightShiftLoop	
@@ -236,6 +203,56 @@ testGPIO :
 
 ret
 
+
+
+
+
+DelayL :
+	
+	push r16
+	push r26
+	push r27
+
+	ldi r16, 5
+	
+	Outer_Loop:				
+							; R27:R26 = X, R29:R28 = Y, R31:R30 = Z
+		ldi r26, 0          ; clr r26; clear register 26
+		ldi r27, 0          ; clr r27; clear register 27
+							
+		Inner_Loop:         
+			adiw r26, 1		; “Add Immediate to Word” R27:R26 incremented
+		brne Inner_Loop
+		
+		dec r16				; decrement r16
+
+	brne Outer_Loop			; " Branch if Not Equal"
+
+	pop r27
+	pop r26
+	pop r16
+
+ret							; return from subroutine
+
+
+
+
+DelayF :
+	
+	push r26
+	push r27
+						; R27:R26 = X, R29:R28 = Y, R31:R30 = Z
+	ldi r26, 0          ; clr r26; clear register 26
+	ldi r27, 0          ; clr r27; clear register 27
+							
+	Counter_Loop:       
+		adiw r26, 1		; “Add Immediate to Word” R27:R26 incremented
+	brne Counter_Loop
+
+	pop r27
+	pop r26
+			
+ret							; return from subroutine
 
 
 /******************* Start an ADC conversion */
@@ -275,66 +292,33 @@ readADC:
 ret
 
 
-/************* Parameterized Delay */
 
-
-; Pre:		r27:r26 contains the number of milliseconds
-; Post:		ROUGH delay in milliseconds
-Delay_ms:
-
-	push r16
-	push r17
-	push r26
-	push r27
-	
-	ldi r16, 100
-	ldi r17, 10
-	milliLoop:
-	
-		microLoop1:
-		subi r16, 1
-		brne microLoop1
-
-		microLoop2:
-		subi r17, 1
-		brne microLoop2
-		
-		sbiw r26, 1		; “Add Immediate to Word” R27:R26 incremented
-		brne milliLoop
-	
-	pop r27
-	pop r26
-	pop r17
-	pop r16
-
-ret
 
 
 /****** Interrupt service routines */
 
-
-; Timer compare interrupt
 TIMER0_COMPA: 
 
 	; Prologue
 	push r17							; save register on stack
 	push r18
+	push r19
 	in r17,SREG	
-		
-	clr r18
-	out PORTB, r18						; PORTB all off 
+
+	in r18, PORTB
+	ser r19
+	eor r18, r19
+	out PORTB, r18						; toogle all output on PORTB
 
 	; Epilogue
 	out SREG,r17						; restore flags
+	pop r19
 	pop r18
 	pop r17
 
 reti
 
 
-
-
-; Timer counter overflow interrupt
 TIMER0_OVF :
 
 	; Prologue
@@ -342,11 +326,8 @@ TIMER0_OVF :
 	push r18
 	in r17,SREG	
 
-	ser r18
-	out PORTB, r18						; PORTB all on 
-
 	lds r18, ADCH
-	com r18								; set the timer to the 1's complement of the 8-bit ADC reading
+	com r18							; set the timer to the 1's complement of the 8-bit ADC reading
 	out OCR0A, r18
 
 	; Epilogue
