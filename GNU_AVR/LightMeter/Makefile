@@ -1,18 +1,40 @@
-test.hex : LightMeter.S
-	avra -o LightMeter.hex -e LightMeter.eep LightMeter.S
+
+TARGET = LightMeter
+ASSEMBLER = avra
+# ASSEMBLER = avr-as
+MCU = m328
+
+ifeq ($(ASSEMBLER), avra)
+
+$(TARGET).hex : $(TARGET).S
+	avra -o $(TARGET).hex -e $(TARGET).eep $(TARGET).S
 
 clean :
-	rm -f LightMeter.hex 
-	rm -f LightMeter.S.obj
-	rm -f LightMeter.eep 
-	rm -f LightMeter.lst
-	rm -f LightMeter.map
+	rm -f *.hex 
+	rm -f *.S.obj
+	rm -f *.eep 
+	rm -f *.lst
+	rm -f *.map
+	
+else	
+# the avr-as build instructions are incomplete
+$(TARGET).out : $(TARGET).S
+	avr-as $(TARGET).S $(TARGET).out
+
+$(TARGET).hex : $(TARGET).out
+	avr-objcopy -j .text -j .data -O ihex $(TARGET).out $(TARGET).hex
+
+endif
+
 
 flash :
-	avrdude -p m328 -c usbasp -e -U flash:w:LightMeter.hex
+	avrdude -p $(MCU) -c usbasp -e -U flash:w:$(TARGET).hex
 
-# $(TARGET).hex: $(TARGET).S
-# avra -o $(TARGET).hex -e -$(TARGET).eep $(TARGET).S
+flash328 :
+	avrdude -p m328 -c usbasp -e -U flash:w:$(TARGET).hex
+
+flash168 :
+	avrdude -p m168 -c usbasp -e -U flash:w:$(TARGET).hex
 
 
 #		AVRA: advanced AVR macro assembler (version 1.4.2)
