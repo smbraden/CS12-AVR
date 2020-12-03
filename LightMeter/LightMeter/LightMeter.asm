@@ -8,6 +8,9 @@
 	Device details:		1MHz clock, 8-bit MCU
     Description:		Continuously measures light intensity, and represents the 
 						intensity on a scale of 1 to 8, as displayed by a row of LED's
+
+	Circuit:			ADC pin (PC0) tied to the node of a voltage divider formed by
+						a ~35kOhm photoresistor and a 10kOhm constant resistance.						
 //-------------------------------------------------------------------------------------*/
 
 .NOLIST								; Don't list the following in the list file
@@ -167,7 +170,7 @@ DelayL :
 		ldi r27, 0          ; clr r27; clear register 27
 							
 		Inner_Loop:         
-			adiw r26, 1		; “Add Immediate to Word” R27:R26 incremented
+			adiw r26, 1		; ï¿½Add Immediate to Wordï¿½ R27:R26 incremented
 		brne Inner_Loop
 		
 		dec r16				; decrement r16
@@ -186,7 +189,7 @@ DelayF :
 		ldi r27, 0          ; clr r27; clear register 27
 							
 		Counter_Loop:       
-			adiw r26, 1		; “Add Immediate to Word” R27:R26 incremented
+			adiw r26, 1		; ï¿½Add Immediate to Wordï¿½ R27:R26 incremented
 		brne Counter_Loop
 		
 ret							; return from subroutine
@@ -310,27 +313,27 @@ ret
 
 	ldi		: 1 : Load Immediate Into; Loads an 8-bit constant directly to regs.16 to 31.
 
-	cbi		: 1 : Clear Bit In I/O Register — Clears a specified bit in an I/O register.
+	cbi		: 1 : Clear Bit In I/O Register ï¿½ Clears a specified bit in an I/O register.
 
-	sbi		: 1 : Set Bit in I/O Register — Sets a specified bit in an I/O Register.
+	sbi		: 1 : Set Bit in I/O Register ï¿½ Sets a specified bit in an I/O Register.
 
-	out		: 1 : Store Register to I/O Location — Stores data from register Rr in the 
+	out		: 1 : Store Register to I/O Location ï¿½ Stores data from register Rr in the 
 					Register File to I/O Space(Ports, Timers, Configuration Registers, etc.).
 
-	dec		: 1 : Decrement — Subtracts one from the contents of register Rd and 
+	dec		: 1 : Decrement ï¿½ Subtracts one from the contents of register Rd and 
 					places the result in the destination register Rd.
 
-	adiw	: 2 : Add Immediate to Word — Adds an immediate value (0–63) 
+	adiw	: 2 : Add Immediate to Word ï¿½ Adds an immediate value (0ï¿½63) 
 					to a register pair and places the result in the register pair.
 
-	brne	: 2 : Branch if Not Equal — Conditional relative branch. 
+	brne	: 2 : Branch if Not Equal ï¿½ Conditional relative branch. 
 					Tests the Zero Flag (Z) and branches relatively to PC if Z is cleared.
 
-	rcall	: 1 : Relative Call to Subroutine — Relative call to an address within PC
+	rcall	: 1 : Relative Call to Subroutine ï¿½ Relative call to an address within PC
 
-	ret		: 1 : Return from Subroutine — Returns from the subroutine.
+	ret		: 1 : Return from Subroutine ï¿½ Returns from the subroutine.
 
-	rjmp	: 1 : Relative Jump — Relative jump to an address.
+	rjmp	: 1 : Relative Jump ï¿½ Relative jump to an address.
 
 	sts		: 2 : Stores one byte from a Register to the data space.  For parts with SRAM, 
 					the data space consists of the Register File, I/O memory, 

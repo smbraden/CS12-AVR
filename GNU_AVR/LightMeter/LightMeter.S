@@ -1,21 +1,26 @@
 ;/*-------------------------------------------------------------------------------------//
-;    Project:			LightMeter
-;	Filename:           LightMeter.asm
-;    Author:				Sonja Braden
-;    Reference:			https://stackoverflow.com/questions/43193023/how-to-set-the-6th-bit-of-admux-on-atmega328p-in-avr-assembly-language
-;    Date:               11/25/2020
-;	Device:				ATmega328A
-;	Device details:		1MHz clock, 8-bit MCU
-;    Description:		Continuously measures light intensity, and represents the 
+;   Project:			LightMeter
+;	Filename:			LightMeter.S
+;   Author:				Sonja Braden
+;   Reference:
+;   Resources:			
+;	Date:               11/21/2020
+;	Device:				ATmega328A or ATmega168A
+;	Device details:		1MHz Clock, 8-bit MCU
+;
+;   Description:		Continuously measures light intensity, and represents the 
 ;						intensity on a scale of 1 to 8, as displayed by a row of LED's
+;
+;	Circuit:			ADC pin (PC0) tied to the node of a voltage divider formed by
+;						a ~35kOhm photoresistor and a 10kOhm constant resistance.
 ;//-------------------------------------------------------------------------------------*/
 
 .NOLIST								; Don't list the following in the list file
-.INCLUDE	"m328def.inc"			; 
+.INCLUDE	"../includes/m328def.inc"
+;.INCLUDE	"../includes/m168def.inc"
 .LIST								; Switch list on again
 
 .EQU		F_CPU = 1000000			; 1MHz Internal RC clock
-.DEVICE		ATmega328				; The target device type (actually using ATmega328A)
 
 ;/******************** SRAM defines */
 
@@ -28,9 +33,6 @@
 .CSEG								; lets the assembler switch output to the code section
 .ORG		0x0000					; next instruction written to address 0x0000
 									; first instruction of an executable always located at address 0x0000
-	jmp Reset						; the reset vector
-	jmp ADC_INT						; ADC Conversion Complete Handler
-	
 
 ;/******************** Reset vector */
 
@@ -43,88 +45,235 @@ Reset:
 	ldi r16, LOW(RAMEND)		
 	out SPL, r16						; SPL = "Stack Pointer Low"
 
-	;/********************** GPIO Inits */
+	;/**************** Initialize other */
+
+	call initGPIO
+		
+	call initADC0
+	
+	call testGPIO
+
+	;/************** Begin Program Loop */
+
+	ProgramLoop:
+		
+		ldi r16, 0
+		call readADC
+		lds r16, ADCH
+		
+		clr r18
+		shiftLoop:
+			lsr r16							; equivalent to left shifting r27:r26 by 7
+			inc r18
+			cpi r18, 5
+		brlt shiftLoop
+
+		rcall LightDisplay					; r16 now holds the 3-bit reading
+
+	jmp ProgramLoop
+
+
+
+
+;/********************* Subroutines */
+
+
+;/********************** GPIO Inits */
+
+initGPIO:
+	push r16
 
 	ser r16								; set all bits in register
 	out DDRB, r16						; entire PORTB set to output
 	
 	cbi DDRC, PC0						; PC0 set to input
 	sbi PORTC, PC0						; activaate pull-up resistors
-		
-	/***************** Interrupt Inits */
-	ldi r16, (1 << ADIE)
-	sts ADCSRA, r16						; Activate ADC Conversion Complete Interrupt
-	
-	SEI									; SREG = SREG | (1 << I)
 
-	;/**********************% ADC Inits */
+	pop r16
+ret
+
+
+
+
+;/********************** ADC Inits */
+
+initADC0:
+	push r16
+	push r17
+
+	ldi r16, (1 << REFS0)			; set REFS0 bit without disturbing other bits
+	lds r17, ADMUX
+	or r17, r16
+	ldi r16, (1 << REFS1)			; clear REFS1 bit without disturbing other bits
+	com r16
+	and r17, r16
+	sts ADMUX, r17					; Voltage Ref set to AVCC w/ external cap at AREF pin
 	
-	; Set voltage reference to AVCC with external capacitor at AREF pin
-	ldi r16, (1 << REFS0)
-	sts ADMUX, r16
-	;cbi ADMUX, REFS1
-	
+	ldi r16, (1 << ADLAR)			
+	lds r17, ADMUX
+	or r17, r16
+	sts ADMUX, r17					; left-adjusted conversion in the ADCH:ADCL
+
+	ldi r16, (1 << ADPS1)
+	lds r17, ADCSRA
+	or r17, r16
+	sts ADCSRA, r17					; ADCSRA |= (1 << ADPS1) ADC prescalar division factor set to 4
+
 	ldi r16, (1 << ADEN)
 	sts ADCSRA, r16					; Set ADC enable bit
+
+	pop r17
+	pop r16
+ret
+
+;/********************************* GPIO Test */
+
+testGPIO:
 	
-	;/************** Begin Program Loop */
-
-	ProgramLoop:
-
-	rjmp ProgramLoop
-
-
-;/****** Interrupt service routines */
-
-ADC_INT:
-	
-	; Prologue
-	PUSH r17							; save register on stack
 	PUSH r18
-	PUSH r26
-	PUSH r27
-	IN r17,SREG							; save flags
+	PUSH r17
+	PUSH r16
+	
+	; Flash PortB a few times
+;	ldi XH, high(500)
+;	ldi XL, low(500)				; could also just clr this reg
 
-	in r27, ADCH
-	in r26, ADCL
-	
-	; 2^10		= 1024
-	; 1024/128	= 8
-	; 2^7		= 128
-	
-	clr r18								; iterator
-	shiftLoop:
-		lsr r27							; shift r27:r26 left by 7
-		inc r18
-		cpi r18, 7
-		brlt shiftLoop
-/*
-	clr r18
-	out PORTB, r18								
-	lightLoop:
-		sbi PORTB, r26					; operand 2 of sbi must be constant
-		cpi r26, 0
-		brge lightLoop
-	
-	*/
+;	clr r16
+;	BlinkLoop:
+;		ser r17
+;		out PORTB, r17
+;		rcall Delay_ms
+;		clr r17
+;		out PORTB, r17
+;		rcall Delay_ms
 
-	mov r16, r26
-	call LightDisplay
-	
+;		inc r16
+;		cpi r16, 0x3
+;		brlt BlinkLoop
 
-	; Epilogue
-	OUT SREG,r17						; restore flags
-	POP r27
-	POP r26
+	ldi r18, 0
+	RepeatShifts:						; Traverse the port a few times
+
+	ldi r16, (1 << 0)
+	ldi r17, 0
+	
+	ldi XH, high(100)
+	ldi XL, low(100)				; could also just clr this reg
+
+	LeftShiftLoop:
+		out PORTB, r16
+		lsl r16
+		rcall Delay_ms
+		inc r17
+		cpi r17, 7
+	brlt LeftShiftLoop	
+	
+	RightShiftLoop:
+		out PORTB, r16
+		lsr r16
+		rcall Delay_ms
+		inc r17
+		cpi r17, 14
+	brlt RightShiftLoop	
+
+	inc r18
+	cpi r18, 2
+	brlt RepeatShifts	
+
+	clr r17
+	out PORTB, r17
+
+	POP r16
+	POP r17
+	POP r18
+
+ret
+
+
+
+
+;/************* Parameterized Delay */
+
+
+; Pre:		r27:r26 contains the number of milliseconds
+; Post:		ROUGH delay in milliseconds
+Delay_ms:
+
+	push r16
+	push r17
+	push r26
+	push r27
+	
+	ldi r16, 100
+	ldi r17, 10
+	milliLoop:
+	
+		microLoop1:
+		subi r16, 1
+		brne microLoop1
+
+		microLoop2:
+		subi r17, 1
+		brne microLoop2
+		
+		sbiw r26, 1		; �Add Immediate to Word� R27:R26 incremented
+		brne milliLoop
+	
+	pop r27
+	pop r26
+	pop r17
+	pop r16
+
+ret
+
+
+;/******************* Start an ADC conversion */
+
+; Pre:		The channel to be read is in r16 (a 3-bit value, 0-8)
+; Post:		The conversion awaits in ADCH and ACDL
+readADC:
+
+	PUSH r18
+	PUSH r17
+
+
+	lds r17, ADMUX
+	or r17, r16
+	sts ADMUX, r17
+
+
+	ldi r17, (1 << ADSC)				
+	lds r18, ADCSRA
+	or r17, r18
+	sts ADCSRA, r17						; ADCSRA |= (1 << ADSC);
+
+	lds r17, ADCSRA
+	cbr r17, ADSC						; sample of ADSC bit cleared from ADCSRA
+
+	loopUntilClear:
+		lds r18, ADCSRA
+		cp r18, r17
+			breq exit
+		jmp loopUntilClear
+
+	exit:
+
 	POP r18
 	POP r17
 
-RETI								; end of service routine
+ret
 
-;/********************* Subroutines */
 
-; Pre:		The parameter is in r16
-LightDisplay :
+
+;/******************** Dispaly Reading */
+
+; Pre:		The 3-bit value is in r16
+LightDisplay:
+
+	PUSH r17
+
+	clr r17
+	out PORTB, r17
 
 	cpi r16, 1
 	brge pin1
@@ -182,5 +331,8 @@ LightDisplay :
 		sbi PORTB, 7
 
 	next8:
+
+	POP r17
+
 ret
 
