@@ -191,42 +191,6 @@ ret
 
 
 
-
-;/************* Parameterized Delay */
-
-
-; Pre:		r27:r26 contains the number of milliseconds
-; Post:		ROUGH delay in milliseconds
-Delay_ms:
-
-	push r16
-	push r17
-	push r26
-	push r27
-	
-	ldi r16, 100
-	ldi r17, 10
-	milliLoop:
-	
-		microLoop1:
-		subi r16, 1
-		brne microLoop1
-
-		microLoop2:
-		subi r17, 1
-		brne microLoop2
-		
-		sbiw r26, 1		; �Add Immediate to Word� R27:R26 incremented
-		brne milliLoop
-	
-	pop r27
-	pop r26
-	pop r17
-	pop r16
-
-ret
-
-
 ;/******************* Start an ADC conversion */
 
 ; Pre:		The channel to be read is in r16 (a 3-bit value, 0-8)
@@ -336,3 +300,6 @@ LightDisplay:
 
 ret
 
+;/********************** Lib Includes */
+
+.INCLUDE	"../includes/Delay.inc"
