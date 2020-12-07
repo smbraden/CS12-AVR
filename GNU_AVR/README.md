@@ -3,10 +3,12 @@ This Directory provides a script for generating a basic avr assembly project in 
 
 # To create a project
 `cd template`
+
 `./createProject fooBar`
 
 # To build and flash the executable
 `cd fooBar`
+
 `make`
 
 ## To create a project
