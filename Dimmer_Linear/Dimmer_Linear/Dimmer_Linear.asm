@@ -376,7 +376,7 @@ readADC:
 	lds r17, ADCSRA
 	cbr r17, ADSC						; sample of ADSC bit cleared from ADCSRA
 
-	loopUntilClear:
+	loopUntilClear:						; ADCSRA out of range for sbic command
 		lds r18, ADCSRA
 		cp r18, r17
 			breq exit
