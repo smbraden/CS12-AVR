@@ -4,9 +4,8 @@
 
 ;/************* Parameterized Delays */
 
-
 ; Pre:		r27:r26 contains the number of milliseconds
-Delay_ms:
+Delay_ms_word:
 
 	push r16
 	push r17
@@ -36,6 +35,34 @@ Delay_ms:
 ret
 
 
+; Pre:		r16 contains the number of milliseconds
+Delay_ms_byte:
+
+	push r16
+	push r17
+	push r18	
+
+	ldi r18, 100
+	ldi r17, 10
+	milliLoop_b:
+	
+		microLoop1_b:
+		subi r18, 1
+		brne microLoop1_b
+
+		microLoop2_b:
+		subi r17, 1
+		brne microLoop2_b
+		
+		subi r16, 1
+		brne milliLoop_b
+	
+	pop r18
+	pop r17
+	pop r16
+
+ret
+
 
 
 ; Pre:		r27:r26 contains the number of microseconds
@@ -47,14 +74,15 @@ Delay_us_word:
 	
 
 	microLoop:
-	
-		sbiw r26, 1
-		brne microLoop
+	sbiw r26, 1
+	brne microLoop
 	
 	pop r27
 	pop r26
 
 ret
+
+
 
 
 

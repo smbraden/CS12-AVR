@@ -19,3 +19,7 @@ sed -i "s/replaceMe/$1/" Makefile
 sed -i "s/template/$1/" $1.S
 sed -i "s/author/$USER/" $1.S
 sed -i "s/system_date_time/$(date)/" $1.S
+
+#!/usr/bin/env bash
+cd ../$1
+exec bash

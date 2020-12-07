@@ -68,7 +68,7 @@ Reset:
 			cpi r18, 5
 		brlt shiftLoop
 
-		rcall LightDisplay					; r16 now holds the 3-bit reading
+		call LightDisplay					; r16 now holds the 3-bit reading
 
 	jmp ProgramLoop
 
@@ -114,7 +114,7 @@ initADC0:
 	or r17, r16
 	sts ADMUX, r17					; left-adjusted conversion in the ADCH:ADCL
 
-	ldi r16, (1 << ADPS1)
+	ldi r16, (1 << ADPS0) | (1 << ADPS1) | (1 << ADPS2)
 	lds r17, ADCSRA
 	or r17, r16
 	sts ADCSRA, r17					; ADCSRA |= (1 << ADPS1) ADC prescalar division factor set to 4
@@ -130,48 +130,47 @@ ret
 
 testGPIO:
 	
+	PUSH r19
 	PUSH r18
 	PUSH r17
 	PUSH r16
 	
 	; Flash PortB a few times
 ;	ldi XH, high(500)
-;	ldi XL, low(500)				; could also just clr this reg
+;	ldi XL, low(500)
 
 ;	clr r16
 ;	BlinkLoop:
 ;		ser r17
 ;		out PORTB, r17
-;		rcall Delay_ms
+;		call Delay_ms_word
 ;		clr r17
 ;		out PORTB, r17
-;		rcall Delay_ms
+;		call Delay_ms_word
 
 ;		inc r16
 ;		cpi r16, 0x3
 ;		brlt BlinkLoop
 
 	ldi r18, 0
-	RepeatShifts:						; Traverse the port a few times
+	ldi r16, 100					; r16 loaded with milliseconds
+	RepeatShifts:					; Traverse the port a few times
 
-	ldi r16, (1 << 0)
+	ldi r19, (1 << 0)
 	ldi r17, 0
-	
-	ldi XH, high(100)
-	ldi XL, low(100)				; could also just clr this reg
 
 	LeftShiftLoop:
-		out PORTB, r16
-		lsl r16
-		rcall Delay_ms
+		out PORTB, r19
+		lsl r19
+		call Delay_ms_byte
 		inc r17
 		cpi r17, 7
 	brlt LeftShiftLoop	
 	
 	RightShiftLoop:
-		out PORTB, r16
-		lsr r16
-		rcall Delay_ms
+		out PORTB, r19
+		lsr r19
+		call Delay_ms_byte
 		inc r17
 		cpi r17, 14
 	brlt RightShiftLoop	
@@ -186,6 +185,7 @@ testGPIO:
 	POP r16
 	POP r17
 	POP r18
+	POP r19
 
 ret
 
@@ -218,7 +218,7 @@ readADC:
 		lds r18, ADCSRA
 		cp r18, r17
 			breq exit
-		jmp loopUntilClear
+		rjmp loopUntilClear
 
 	exit:
 

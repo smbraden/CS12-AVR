@@ -26,10 +26,9 @@
 .DEVICE		ATmega328				; The target device type (actually using ATmega328A)
 
 .EQU		F_CPU = 1000000			; 1MHz Internal RC clock
-.EQU		LOWER_BOUND = 5			;
 .EQU		DEFAULT_DELAY = 400		; (*) 100 - 400 good range
-.EQU		ON = 0x01
-.EQU		OFF = 0x00
+.EQU		TRUE = 0x01
+.EQU		FALSE = 0x00
 
 .DEF		SLEEP_IDLE = r20		; don't use r20 anywhere else
 
@@ -98,7 +97,7 @@ Reset:
 
 	ProgramLoop:
 		
-		cpi SLEEP_IDLE, ON
+		cpi SLEEP_IDLE, TRUE
 		brne SkipSleep
 		sleep
 
@@ -204,7 +203,7 @@ initSleepMode:
 	ldi r16, 0x0E | (1 << SE)			; idle sleep mode, and sleep enable bit
 	out SMCR, r16
 	
-	ldi SLEEP_IDLE, OFF
+	ldi SLEEP_IDLE, FALSE
 
 	pop r16
 
@@ -454,7 +453,7 @@ InitInterrupts:
 	ldi r16, (1 << INT0)				
 	out EIMSK, r16						;  external pin interrupt is enabled
 
-	SEI									; Set Global Interrupt Enable Bit
+	sei									; Set Global Interrupt Enable Bit
 	pop r16
 ret
 
@@ -465,6 +464,7 @@ ret
 EXT_INT0:
 								
 	push r19							; save register on stack
+	push r17
 	in r17, SREG						; save flags
 
 	ldi r19, 10							; ~10ms debouncing delay
@@ -472,10 +472,11 @@ EXT_INT0:
 		subi r19, 1
 		brne debounceLoop
 	
-	ldi r19, ON
+	ldi r19, TRUE
 	eor SLEEP_IDLE, r19
 
 	out SREG, r17						; restore flags
+	pop r17
 	pop r19
 	
 RETI								; end of service routine 1
