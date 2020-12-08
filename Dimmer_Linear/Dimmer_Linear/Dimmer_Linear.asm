@@ -10,7 +10,8 @@
 						an LED display in response to adjusting a potentiometer knob.
 						A button is used to turn off/on the lights completely by 
 						putting the CPU to sleep or waking it up
-						This is a brute force approach, to contrast the program, Dimmer
+						This is a brute force approach, 
+						to contrast ISR's or hardware-dedicated pwm
 
 	Circuit:			PORTB pins (PB0 - PB7) are wired to LEDS in order 0 - 7.
 						PC0 (ADC0) is wired to the node of a voltage divider, which 

@@ -7,7 +7,7 @@
 	Device:				ATmega328A
 	Device details:		1MHz clock, 8-bit MCU
     Description:		Uses PWM to dim/brighten an LED display depending on the 
-						ACD voltage reading
+						ACD voltage reading. ISR's are used to hack pwm on all PORTB pins
 //-------------------------------------------------------------------------------------*/
 
 .NOLIST								; Don't list the following in the list file
@@ -17,7 +17,7 @@
 .EQU		F_CPU = 1000000			; 1MHz Internal RC clock
 .EQU		TRUE = 0x01
 .EQU		FALSE = 0x00
-.EQU		DEFAULT_DELAY = 30
+.EQU		DEFAULT_DELAY = 3
 
 .DEF		ADC_SAMPLE = r21		; don't use r21 anywhere else
 .DEF		ADC_FLAG = r22			; don't use r21 anywhere else
@@ -54,8 +54,7 @@
 	reti					; USART_RX
 	reti					; USART_UDRE
 	reti					; USART_TX
-	reti					; ADC dummy isr
-;	jmp ADC_CONV			; ADC
+	jmp ADC_CONV			; ADC
 	reti					; EE_READY
 	reti					; ANALOG_COMP
 	reti					; TWI
@@ -80,20 +79,74 @@ Reset:
 	rcall testGPIO
 	rcall initTimer
 
-	; ldi ADC_FLAG, FALSE
-	ldi XL, low(DEFAULT_DELAY)
-	ldi XH, high(DEFAULT_DELAY)
+	ldi ADC_FLAG, FALSE
+	ldi r16, DEFAULT_DELAY
 	sei									; Enable global interrrupts
 
 	/************** Begin Program Loop */
 	
 	ProgramLoop:
 		
-		ldi r16, 0x00
-		call readADC
-		lds ADC_SAMPLE, ADCH
-		call Delay_ms					; delay for DEFAULT_DELAY milliseconds
+		call Delay_ms_byte					; delay for DEFAULT_DELAY milliseconds
 	jmp ProgramLoop
+
+
+
+/****** Interrupt service routines */
+
+ADC_CONV:
+	
+	ldi ADC_FLAG,  TRUE
+	lds ADC_SAMPLE, ADCH
+
+reti
+
+
+
+
+/***************** PWM Timer ISR's */
+
+
+; Timer compare interrupt
+TIMER0_COMPA: 
+
+	; Prologue
+	push r17							; save register on stack
+	push r18
+	in r17,SREG	
+		
+	clr r18
+	out PORTB, r18						; PORTB all off 
+
+	; Epilogue
+	out SREG,r17						; restore flags
+	pop r18
+	pop r17
+
+reti
+
+
+
+
+; Timer counter overflow interrupt
+TIMER0_OVF :
+
+	; Prologue
+	push r18							; save register on stack
+	push r17
+	in r17,SREG	
+
+	ser r18
+	out PORTB, r18						; PORTB all on 
+
+	out OCR0A, ADC_SAMPLE				; set the new duty cycle
+
+	; Epilogue
+	out SREG,r17						; restore flags
+	pop r17
+	pop r18
+	
+reti
 
 
 
@@ -105,9 +158,7 @@ Reset:
 
 initGPIO:
 
-	push r17
 	push r16
-
 										; Output 
 	ser r16								; set all bits in register
 	out DDRB, r16						; entire PORTB set to output
@@ -116,24 +167,14 @@ initGPIO:
 	cbi DDRC, PC0						; PC0 set to input
 	sbi PORTC, PC0						; activaate pull-up resistors
 
-										; Button
-	ldi r16, (1 << PD2)					; bit mask PD2
-	in r17, DDRD						; snapshot of register
-	or r17, r16							; bit mask PD2 & former register state
-	out DDRD, r17						; PD2 set to input
-
-	in r17, PORTB						; snapshot of register
-	or r17, r16							; bit mask PD2 & former register state
-	out PORTB, r17						; PD2 pull-up resistors set
-
 	pop r16
-	pop r17
-
+	
 ret
 
 
 
 
+/********************** ADC Inits */
 
 initSingleSampleADC:
 
@@ -171,7 +212,6 @@ ret
 
 
 
-/********************** ADC Inits */
 
 ; Pre:		The channel to be read is in r16 (a 3-bit value, 0-8)
 initContiuousADC:
@@ -183,9 +223,10 @@ initContiuousADC:
 	and r17, r16					; all upper bits in ADMUX are set below
 	sts ADMUX, r17					; read the argument channel
 
+	ser r17
 	cbr r17, (1 << ADTS2) | (1 << ADTS1) | (1 << ADTS0) 
 	lds r16, ADCSRB
-	or r17, r16
+	and r17, r16
 	sts ADCSRB, r17					; Auto-trigger source: free-running mode
 	
 	ldi r16, (1 << REFS1)
@@ -223,7 +264,8 @@ ret
 
 /******************* Start an ADC conversion */
 
-; Pre:		The channel to be read is in r16 (a 3-bit value, 0-8)
+; Pre:		Single conversion mode is set.
+;			The channel to be read is in r16 (a 3-bit value, 0-8)
 ; Post:		The conversion awaits in ADCH and ACDL
 readADC:
 
@@ -264,6 +306,9 @@ ret
 
 initTimer:
 
+	PUSH r17
+	PUSH r16
+
 	ldi r17, (1 << CS01) | (1 << CS00)
 	in r16, TCCR0B
 	or r17, r16
@@ -272,106 +317,65 @@ initTimer:
 	ldi r16, (1 << OCIE0A) | (1 << TOIE0)
 	lds r17, TIMSK0						; TIMSK0 |= (1 << TOIE0) overflow interrupt enable
 	or r17, r16							; TIMSK0 |= (1 << OCIE0A) TIM0 output compare interrupts
-	sts TIMSK0, r17						
+	sts TIMSK0, r17
+	
+	POP r16
+	POP r17					
 			
 ret
 
 
 
-
-
-/****** Interrupt service routines */
-
-/*
-ADC_CONV:
-	
-	ldi ADC_FLAG,  TRUE
-	lds ADC_SAMPLE, ADCH
-
-reti
-*/
-
-
-
-/***************** PWM Timer ISR's */
-
-
-; Timer compare interrupt
-TIMER0_COMPA: 
-
-	; Prologue
-	push r17							; save register on stack
-	push r18
-	in r17,SREG	
-		
-	clr r18
-	out PORTB, r18						; PORTB all off 
-
-	; Epilogue
-	out SREG,r17						; restore flags
-	pop r18
-	pop r17
-
-reti
-
-
-
-
-; Timer counter overflow interrupt
-TIMER0_OVF :
-
-	; Prologue
-	push r17							; save register on stack
-	push r18
-	in r17,SREG	
-
-	ser r18
-	out PORTB, r18						; PORTB all on 
-
-	out OCR0A, ADC_SAMPLE
-
-	; Epilogue
-	out SREG,r17						; restore flags
-	pop r18
-	pop r17
-
-reti
-
-
-
-
-
 /********************************* GPIO Test */
-
 
 testGPIO :
 	
+	; PUSH r27
+	; PUSH r26
+	PUSH r19
 	PUSH r18
 	PUSH r17
 	PUSH r16
 	
+	; Flash PortB a few times
+	/*
+	clr r16
+	BlinkLoop:
+		
+		ldi XL, low(500)
+		ldi XH, high(500)
+
+		ser r17
+		out PORTB, r17
+		rcall Delay_ms_word
+		clr r17
+		out PORTB, r17
+		rcall Delay_ms_word
+
+		inc r16
+		cpi r16, 0x2
+		brlt BlinkLoop
+	*/
+
+	ldi r16, 100
 	ldi r18, 0
 	RepeatShifts:						; Traverse the port a few times
 
-	ldi r16, (1 << 0)
+	ldi r19, (1 << 0)
 	ldi r17, 0
 	
-	ldi XL, low(100)
-	ldi XH, high(100)
-	
-		
 	LeftShiftLoop:
-		out PORTB, r16
-		lsl r16
-		rcall Delay_ms
+		out PORTB, r19
+		lsl r19
+		rcall Delay_ms_byte
 		inc r17
 		cpi r17, 7
 	brlt LeftShiftLoop	
 	
 	RightShiftLoop:
-		out PORTB, r16
-		lsr r16
-		rcall Delay_ms
+		out PORTB, r19
+		lsr r19
+		rcall Delay_ms_byte
 		inc r17
 		cpi r17, 14
 	brlt RightShiftLoop	
@@ -386,18 +390,19 @@ testGPIO :
 	POP r16
 	POP r17
 	POP r18
+	POP r19
+	; POP r26
+	; POP r27
 
 ret
 
 
 
 
-
-/************* Parameterized Delays */
-
+;/************* Parameterized Delays */
 
 ; Pre:		r27:r26 contains the number of milliseconds
-Delay_ms:
+Delay_ms_word:
 
 	push r16
 	push r17
@@ -428,6 +433,38 @@ ret
 
 
 
+
+; Pre:		r16 contains the number of milliseconds
+Delay_ms_byte:
+
+	push r16
+	push r17
+	push r18	
+
+	ldi r18, 100
+	ldi r17, 10
+	milliLoop_b:
+	
+		microLoop1_b:
+		subi r18, 1
+		brne microLoop1_b
+
+		microLoop2_b:
+		subi r17, 1
+		brne microLoop2_b
+		
+		subi r16, 1
+		brne milliLoop_b
+	
+	pop r18
+	pop r17
+	pop r16
+
+ret
+
+
+
+
 ; Pre:		r27:r26 contains the number of microseconds
 Delay_us_word:
 
@@ -437,9 +474,8 @@ Delay_us_word:
 	
 
 	microLoop:
-	
-		sbiw r26, 1
-		brne microLoop
+	sbiw r26, 1
+	brne microLoop
 	
 	pop r27
 	pop r26
@@ -450,7 +486,6 @@ ret
 
 
 ; Pre:		r16 has the number of ticks to count
-
 Delay_us_byte:
 
 	push r16
@@ -463,36 +498,6 @@ Delay_us_byte:
 	pop r16
 ret
 
-
-
-
-
-/******************** Square Nibble */
-
-; Pre:			hgiher nibble of r16 holds the value to be squared
-; Post:			r16 holds the square of the nibble (a byte)
-
-Square_nibble:
-
-	push r17
-	push r0
-	push r1
-	
-	lsr r16					
-	lsr r16
-	lsr r16
-	lsr r16
-	; swap, r16				; swap the low and high nibble
-
-	mov r17, r16
-	mul r16, r17
-	mov r16, r0				; r1:r0 holds the result of multiplications
-
-	pop r1
-	pop r0
-	pop r17
-
-ret
 
 
 
