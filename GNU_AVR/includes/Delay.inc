@@ -35,6 +35,8 @@ Delay_ms_word:
 ret
 
 
+
+
 ; Pre:		r16 contains the number of milliseconds
 Delay_ms_byte:
 
@@ -65,6 +67,7 @@ ret
 
 
 
+
 ; Pre:		r27:r26 contains the number of microseconds
 Delay_us_word:
 
@@ -85,9 +88,7 @@ ret
 
 
 
-
 ; Pre:		r16 has the number of ticks to count
-
 Delay_us_byte:
 
 	push r16

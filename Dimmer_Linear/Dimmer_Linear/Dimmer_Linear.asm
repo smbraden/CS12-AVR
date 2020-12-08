@@ -211,9 +211,11 @@ ret
 
 /********************************* GPIO Test */
 
-
 testGPIO :
 	
+	; PUSH r27
+	; PUSH r26
+	PUSH r19
 	PUSH r18
 	PUSH r17
 	PUSH r16
@@ -228,38 +230,35 @@ testGPIO :
 
 		ser r17
 		out PORTB, r17
-		rcall Delay_ms
+		rcall Delay_ms_word
 		clr r17
 		out PORTB, r17
-		rcall Delay_ms
+		rcall Delay_ms_word
 
 		inc r16
 		cpi r16, 0x2
 		brlt BlinkLoop
 	*/
 
+	ldi r16, 100
 	ldi r18, 0
 	RepeatShifts:						; Traverse the port a few times
 
-	ldi r16, (1 << 0)
+	ldi r19, (1 << 0)
 	ldi r17, 0
 	
-	ldi XL, low(100)
-	ldi XH, high(100)
-	
-		
 	LeftShiftLoop:
-		out PORTB, r16
-		lsl r16
-		rcall Delay_ms
+		out PORTB, r19
+		lsl r19
+		rcall Delay_ms_byte
 		inc r17
 		cpi r17, 7
 	brlt LeftShiftLoop	
 	
 	RightShiftLoop:
-		out PORTB, r16
-		lsr r16
-		rcall Delay_ms
+		out PORTB, r19
+		lsr r19
+		rcall Delay_ms_byte
 		inc r17
 		cpi r17, 14
 	brlt RightShiftLoop	
@@ -274,83 +273,11 @@ testGPIO :
 	POP r16
 	POP r17
 	POP r18
+	POP r19
+	; POP r26
+	; POP r27
 
 ret
-
-
-
-
-/************* Parameterized Delays */
-
-
-; Pre:		r27:r26 contains the number of milliseconds
-Delay_ms:
-
-	push r16
-	push r17
-	push r26
-	push r27
-	
-	ldi r16, 100
-	ldi r17, 10
-	milliLoop:
-	
-		microLoop1:
-		subi r16, 1
-		brne microLoop1
-
-		microLoop2:
-		subi r17, 1
-		brne microLoop2
-		
-		sbiw r26, 1
-		brne milliLoop
-	
-	pop r27
-	pop r26
-	pop r17
-	pop r16
-
-ret
-
-
-
-
-; Pre:		r27:r26 contains the number of microseconds
-Delay_us_word:
-
-
-	push r26
-	push r27
-	
-
-	microLoop:
-	
-		sbiw r26, 1
-		brne microLoop
-	
-	pop r27
-	pop r26
-
-ret
-
-
-
-; Pre:		r16 has the number of ticks to count
-
-Delay_us_byte:
-
-	push r16
-
-	delayLoop:
-		
-		subi r16, 1
-		brne delayLoop
-	
-	pop r16
-ret
-
-
 
 
 /******************* Start an ADC conversion */
@@ -480,3 +407,106 @@ EXT_INT0:
 	pop r19
 	
 RETI								; end of service routine 1
+
+
+
+
+
+;/************* Parameterized Delays */
+
+; Pre:		r27:r26 contains the number of milliseconds
+Delay_ms_word:
+
+	push r16
+	push r17
+	push r26
+	push r27
+	
+	ldi r16, 100
+	ldi r17, 10
+	milliLoop:
+	
+		microLoop1:
+		subi r16, 1
+		brne microLoop1
+
+		microLoop2:
+		subi r17, 1
+		brne microLoop2
+		
+		sbiw r26, 1
+		brne milliLoop
+	
+	pop r27
+	pop r26
+	pop r17
+	pop r16
+
+ret
+
+
+
+
+; Pre:		r16 contains the number of milliseconds
+Delay_ms_byte:
+
+	push r16
+	push r17
+	push r18	
+
+	ldi r18, 100
+	ldi r17, 10
+	milliLoop_b:
+	
+		microLoop1_b:
+		subi r18, 1
+		brne microLoop1_b
+
+		microLoop2_b:
+		subi r17, 1
+		brne microLoop2_b
+		
+		subi r16, 1
+		brne milliLoop_b
+	
+	pop r18
+	pop r17
+	pop r16
+
+ret
+
+
+
+
+; Pre:		r27:r26 contains the number of microseconds
+Delay_us_word:
+
+
+	push r26
+	push r27
+	
+
+	microLoop:
+	sbiw r26, 1
+	brne microLoop
+	
+	pop r27
+	pop r26
+
+ret
+
+
+
+
+; Pre:		r16 has the number of ticks to count
+Delay_us_byte:
+
+	push r16
+
+	delayLoop:
+		
+		subi r16, 1
+		brne delayLoop
+	
+	pop r16
+ret
