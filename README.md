@@ -14,7 +14,7 @@
   
  [Atmel Studio](https://ww1.microchip.com/downloads/en/DeviceDoc/Getting-Started-with-Atmel-Studio7.pdf)
 
-![ATmega 168/328 Pin Mapping](Atmega168PinMap.png)
+![ATmega 168/328 Pin Mapping](Reference_Files/Atmega168PinMap.png)
 
  ## Flashing
 
