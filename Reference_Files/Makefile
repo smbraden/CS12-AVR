@@ -1,3 +1,6 @@
+# Created by Elliot Williams
+# https://github.com/hexagon5un/AVR-Programming
+
 
 ##########------------------------------------------------------##########
 ##########              Project-specific Details                ##########

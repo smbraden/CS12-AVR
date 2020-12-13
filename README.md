@@ -18,11 +18,9 @@
 
  ## Flashing
 
-As of writing, programmers supported by Atmel Studio IDE include
-* STK500
-* J-Link (over IP)
+A limited number of ISP programmers are supported by Atmel Studio 7
 
-The hex file can also be flashed to the MCU using another avrdude-supported ISP programmer. [AVRDUDE](https://www.nongnu.org/avrdude/) is a utility to download/upload/manipulate the ROM and EEPROM contents of AVR microcontrollers using the in-system programming technique (ISP). 
+The hex file can also be flashed to the MCU using other cheap avrdude-supported ISP programmer. [AVRDUDE](https://www.nongnu.org/avrdude/) is a utility to download/upload/manipulate the ROM and EEPROM contents of AVR microcontrollers using the in-system programming technique (ISP). 
 
 The command for flashing Hello_AtmelStudio using a USBasp programmer is the following:
 
