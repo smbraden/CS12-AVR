@@ -2,7 +2,7 @@
     Project:			LightMeter
 	Filename:           LightMeter.asm
     Author:				Sonja Braden
-    Reference:			
+    Reference:			http://www.rjhcoding.com/avr-asm-pm.php
     Date:               11/25/2020
 	Device:				ATmega328A
 	Device details:		1MHz clock, 8-bit MCU
@@ -24,7 +24,13 @@
 
 .DSEG
 .ORG SRAM_START
-; Format: Label: .BYTE N ; reserve N Bytes from Label:
+
+tempVar: .db	0x00				; reserve 1 byte
+
+/******************* Macro defines */
+
+;.MACRO example ; Start macro definition
+;.ENDMACRO ; End macro definition
 
 /********* Reset/Interrupt Vectors */
 
@@ -47,9 +53,7 @@ Reset:
 	/**************** Initialize other */
 
 	rcall initGPIO
-		
 	rcall initADC
-	
 	rcall testGPIO
 
 	/************** Begin Program Loop */
@@ -227,7 +231,7 @@ ret
 
 
 /******************** Dispaly Reading */
-
+/*
 ; Pre:		The 3-bit value is in r16
 LightDisplay :
 
@@ -296,6 +300,31 @@ LightDisplay :
 	POP r15
 
 ret
+*/
+
+
+
+; Pre:		The 3-bit value is in r16
+LightDisplay :
+
+	push r17
+
+	clr r17
+	out PORTB, r17
+
+	LightLoop:
+		
+		sbi PORTB, r17					; sbi only works for immediates
+		inc r17
+		cp r17, r16
+		brlt LightLoop
+	
+	pop r17
+	
+ret
+
+
+
 
 
 ;/************* Parameterized Delays */
@@ -329,7 +358,6 @@ Delay_ms_word:
 	pop r16
 
 ret
-
 
 
 

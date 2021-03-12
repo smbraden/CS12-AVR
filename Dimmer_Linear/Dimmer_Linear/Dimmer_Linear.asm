@@ -37,7 +37,7 @@
 
 .DSEG
 .ORG SRAM_START
-; Format: Label: .BYTE N ; reserve N Bytes from Label:
+; Label: .BYTE N					; reserve N Bytes from Label:
 
 /********* Reset/Interrupt Vectors */
 
@@ -281,6 +281,9 @@ testGPIO :
 ret
 
 
+
+
+
 /******************* Start an ADC conversion */
 
 ; Pre:		The channel to be read is in r16 (a 3-bit value, 0-8)
@@ -312,10 +315,13 @@ readADC:
 
 	exit:
 
-	POP r18
 	POP r17
+	POP r18
 
 ret
+
+
+
 
 /********************** Square Byte */
 
